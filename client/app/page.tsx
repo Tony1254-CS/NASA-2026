@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchHealthStatus, type HealthResponse } from '@/lib/api';
+import { fetchHealthStatus, API_BASE_URL, type HealthResponse } from '@/lib/api';
 
 export default function HomePage() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -75,7 +75,7 @@ export default function HomePage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            API URL: <code className="font-mono bg-muted px-1.5 py-0.5 rounded">{process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</code>
+            API URL: <code className="font-mono bg-muted px-1.5 py-0.5 rounded">{API_BASE_URL}</code>
           </p>
         </CardContent>
       </Card>

@@ -1,12 +1,13 @@
 /**
  * Centralized API client utility
- * Reads process.env.NEXT_PUBLIC_API_URL dynamically
+ * Environment-driven URL helper (process.env.NEXT_PUBLIC_API_URL)
  */
 
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export function getApiUrl(path: string = ''): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl}${cleanPath}`;
+  return `${API_BASE_URL}${cleanPath}`;
 }
 
 export interface HealthResponse {
