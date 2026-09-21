@@ -30,11 +30,12 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error occurred."},
     )
 
-from server.app.api.routes import cases
+from server.app.api.routes import cases, nasa
 
 # Include Routers
 app.include_router(health.router)
 app.include_router(cases.router, prefix="/api")
+app.include_router(nasa.router, prefix="/api")
 
 
 @app.get("/", include_in_schema=False)

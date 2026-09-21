@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: Optional[str] = None
     SUPABASE_JWKS_URL: Optional[str] = None
 
+    # NASA / Earthdata Configuration (SERVER ONLY)
+    EARTHDATA_USERNAME: Optional[str] = None
+    EARTHDATA_PASSWORD: Optional[str] = None
+    EARTHDATA_TOKEN: Optional[str] = None
+    CMR_BASE_URL: str = "https://cmr.earthdata.nasa.gov"
+    ASF_API_BASE_URL: str = "https://api.daac.asf.alaska.edu"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
