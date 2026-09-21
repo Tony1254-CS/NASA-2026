@@ -27,6 +27,20 @@ class Settings(BaseSettings):
     # Database URL
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/trace_db"
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def parse_database_url(cls, v: Any) -> str:
+        if isinstance(v, str) and v.count("@") > 1:
+            prefix, host_db = v.rsplit("@", 1)
+            if "://" in prefix:
+                scheme, user_pass = prefix.split("://", 1)
+                if ":" in user_pass:
+                    user, password = user_pass.split(":", 1)
+                    import urllib.parse
+                    encoded_pw = urllib.parse.quote(urllib.parse.unquote(password))
+                    return f"{scheme}://{user}:{encoded_pw}@{host_db}"
+        return v
+
     # Supabase Credentials (SERVER ONLY)
     SUPABASE_URL: str = "https://your-project.supabase.co"
     SUPABASE_ANON_KEY: str = "your-supabase-anon-key"

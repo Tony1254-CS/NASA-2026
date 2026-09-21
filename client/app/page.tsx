@@ -1,26 +1,32 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchHealthStatus, API_BASE_URL, type HealthResponse } from '@/lib/api';
+import { fetchHealthStatus } from '@/lib/api';
+import { useGeolocation } from '@/lib/useGeolocation';
+import { MobileHeader } from '@/components/mobile/MobileHeader';
+import { MobileNav, type MobileTab } from '@/components/mobile/MobileNav';
+import { ScanScreen } from '@/components/mobile/ScanScreen';
+import { FeelScreen } from '@/components/mobile/FeelScreen';
+import { VerifyScreen } from '@/components/mobile/VerifyScreen';
 
 export default function HomePage() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [status, setStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
+  const { status: locationStatus } = useGeolocation();
+  const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
+  const [activeTab, setActiveTab] = useState<MobileTab>('scan');
+  const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     fetchHealthStatus()
-      .then((data) => {
+      .then(() => {
         if (isMounted) {
-          setHealth(data);
-          setStatus('connected');
+          setServerStatus('connected');
         }
       })
       .catch(() => {
         if (isMounted) {
-          setStatus('disconnected');
+          setServerStatus('disconnected');
         }
       });
 
@@ -30,55 +36,36 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">TRACE Platform</CardTitle>
-          <CardDescription>
-            Temporal Radar Assessment & Cross-mission Evidence — Requirement-0 System Status
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2 border rounded-lg p-4 bg-card">
-            <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-              System Status
-            </h3>
-            
-            <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <span className="text-sm font-medium">Frontend</span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                Online
-              </span>
-            </div>
+    <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-primary/20">
+      {/* TRACE FIELD Header */}
+      <MobileHeader locationStatus={locationStatus} serverStatus={serverStatus} />
 
-            <div className="flex items-center justify-between py-1">
-              <span className="text-sm font-medium">Backend</span>
-              {status === 'loading' && (
-                <span className="text-xs font-semibold text-muted-foreground animate-pulse">
-                  Connecting...
-                </span>
-              )}
-              {status === 'connected' && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Connected ({health?.service || 'TRACE server'})
-                </span>
-              )}
-              {status === 'disconnected' && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                  <span className="h-2 w-2 rounded-full bg-destructive" />
-                  Disconnected
-                </span>
-              )}
-            </div>
-          </div>
+      {/* Main Content Area */}
+      <main className="flex-1 pt-4 pb-20">
+        {activeTab === 'scan' && (
+          <ScanScreen
+            onNavigateToFeel={() => setActiveTab('feel')}
+            onNavigateToVerify={() => setActiveTab('verify')}
+          />
+        )}
 
-          <p className="text-xs text-muted-foreground">
-            API URL: <code className="font-mono bg-muted px-1.5 py-0.5 rounded">{API_BASE_URL}</code>
-          </p>
-        </CardContent>
-      </Card>
+        {activeTab === 'feel' && (
+          <FeelScreen
+            initialCaseId={currentCaseId}
+            onNavigateToVerify={() => setActiveTab('verify')}
+          />
+        )}
+
+        {activeTab === 'verify' && (
+          <VerifyScreen
+            initialCaseId={currentCaseId}
+            onSuccess={() => setActiveTab('scan')}
+          />
+        )}
+      </main>
+
+      {/* TRACE FIELD Navigation */}
+      <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }
