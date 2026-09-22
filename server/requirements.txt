@@ -7,6 +7,7 @@ pydantic-settings>=2.4.0
 # Database & PostGIS Foundation
 sqlalchemy>=2.0.30
 geoalchemy2>=0.15.0
+shapely>=2.0.0
 alembic>=1.13.0
 psycopg2-binary>=2.9.9
 
