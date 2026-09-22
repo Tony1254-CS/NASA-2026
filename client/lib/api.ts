@@ -3,7 +3,7 @@
  * Environment-driven URL helper (process.env.NEXT_PUBLIC_API_URL)
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://traceserver-production.up.railway.app';
 
 export function getApiUrl(path: string = ''): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
