@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
-from server.app.core.database import Base
+from app.core.database import Base
 
 
 def generate_uuid() -> str:

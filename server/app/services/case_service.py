@@ -1,9 +1,9 @@
 from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from server.app.repositories.case_repository import CaseRepository
-from server.app.utils.geo import shape_to_geojson
-from server.app.schemas.case import (
+from app.repositories.case_repository import CaseRepository
+from app.utils.geo import shape_to_geojson
+from app.schemas.case import (
     CaseListItem,
     PaginatedCasesResponse,
     CaseDetailResponse,

@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, status, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from server.app.core.config import settings
-from server.app.core.database import get_db
+from app.core.config import settings
+from app.core.database import get_db
 
 router = APIRouter()
 

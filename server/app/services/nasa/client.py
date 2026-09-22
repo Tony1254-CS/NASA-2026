@@ -2,7 +2,7 @@ import time
 import logging
 from typing import Optional, Dict, Any
 import httpx
-from server.app.core.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger("trace.nasa.client")
 

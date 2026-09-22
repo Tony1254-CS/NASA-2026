@@ -2,11 +2,11 @@ from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Query, status
 import httpx
-from server.app.core.config import settings
-from server.app.services.nasa.nisar import NisarDiscoveryService
-from server.app.services.nasa.gpm import GpmDiscoveryService
-from server.app.services.nasa.modis import ModisDiscoveryService
-from server.app.services.nasa.schemas import (
+from app.core.config import settings
+from app.services.nasa.nisar import NisarDiscoveryService
+from app.services.nasa.gpm import GpmDiscoveryService
+from app.services.nasa.modis import ModisDiscoveryService
+from app.services.nasa.schemas import (
     NASAObservationSearchResponse,
     NASAHealthResponse,
 )

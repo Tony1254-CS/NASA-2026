@@ -1,21 +1,21 @@
 import sys
 from pathlib import Path
 
-# Ensure monorepo root is in sys.path so 'server.app...' package imports resolve correctly
-_monorepo_root = Path(__file__).resolve().parent.parent.parent
-if str(_monorepo_root) not in sys.path:
-    sys.path.insert(0, str(_monorepo_root))
+# Ensure server directory is in sys.path so 'app...' package imports resolve correctly
+_server_root = Path(__file__).resolve().parent.parent
+if str(_server_root) not in sys.path:
+    sys.path.insert(0, str(_server_root))
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from server.app.core.config import settings
-from server.app.core.database import Base, engine, SessionLocal
-from server.app.core.seed import seed_initial_cases
-from server.app.api import health
-from server.app.api.routes import cases, nasa
+from app.core.config import settings
+from app.core.database import Base, engine, SessionLocal
+from app.core.seed import seed_initial_cases
+from app.api import health
+from app.api.routes import cases, nasa
 
 
 @asynccontextmanager

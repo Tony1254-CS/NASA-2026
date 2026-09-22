@@ -3,8 +3,8 @@ import pytest
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import sessionmaker
 from geoalchemy2.elements import WKTElement
-from server.app.core.database import Base
-from server.app.models.case import (
+from app.core.database import Base
+from app.models.case import (
     Case,
     NisarMeasurement,
     Evidence,

@@ -1,9 +1,9 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from server.app.core.database import get_db
-from server.app.services.case_service import CaseService
-from server.app.schemas.case import (
+from app.core.database import get_db
+from app.services.case_service import CaseService
+from app.schemas.case import (
     PaginatedCasesResponse,
     CaseDetailResponse,
     EvidenceResponse,

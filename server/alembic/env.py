@@ -4,10 +4,10 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from server.app.core.config import settings
-from server.app.core.database import Base
+from app.core.config import settings
+from app.core.database import Base
 
 config = context.config
 

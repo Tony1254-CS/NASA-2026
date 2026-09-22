@@ -4,14 +4,14 @@ import pytest
 import httpx
 from fastapi.testclient import TestClient
 
-from server.app.main import app
-from server.app.core.config import settings
-from server.app.services.nasa.client import NasaHttpClient
-from server.app.services.nasa.cmr import CMRSearchService
-from server.app.services.nasa.nisar import NisarDiscoveryService
-from server.app.services.nasa.gpm import GpmDiscoveryService
-from server.app.services.nasa.modis import ModisDiscoveryService
-from server.app.services.nasa.schemas import NASAObservation, GeoJSONGeometry
+from app.main import app
+from app.core.config import settings
+from app.services.nasa.client import NasaHttpClient
+from app.services.nasa.cmr import CMRSearchService
+from app.services.nasa.nisar import NisarDiscoveryService
+from app.services.nasa.gpm import GpmDiscoveryService
+from app.services.nasa.modis import ModisDiscoveryService
+from app.services.nasa.schemas import NASAObservation, GeoJSONGeometry
 
 client = TestClient(app)
 
@@ -162,7 +162,7 @@ def test_api_modis_search_endpoint(mock_nasa_get):
     assert data["total"] == 0
 
 
-@patch("server.app.api.routes.nasa.httpx.Client")
+@patch("app.api.routes.nasa.httpx.Client")
 def test_api_nasa_health_endpoint(mock_httpx_cls):
     mock_instance = MagicMock()
     mock_resp = MagicMock()
@@ -181,7 +181,7 @@ def test_api_nasa_health_endpoint(mock_httpx_cls):
     assert "username" not in data
 
 
-@patch("server.app.services.nasa.client.httpx.Client")
+@patch("app.services.nasa.client.httpx.Client")
 def test_nasa_client_timeout_handling(mock_httpx_cls):
     mock_instance = MagicMock()
     mock_instance.get.side_effect = httpx.TimeoutException("NASA timeout")

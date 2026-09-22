@@ -10,9 +10,9 @@ from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 import shapely.wkt
 
-from server.app.main import app
-from server.app.core.database import Base, get_db
-from server.app.models.case import (
+from app.main import app
+from app.core.database import Base, get_db
+from app.models.case import (
     Case,
     NisarMeasurement,
     Evidence,

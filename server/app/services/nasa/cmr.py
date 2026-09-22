@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
-from server.app.core.config import settings
-from server.app.services.nasa.client import NasaHttpClient
-from server.app.services.nasa.schemas import NASAObservation, GeoJSONGeometry
+from app.core.config import settings
+from app.services.nasa.client import NasaHttpClient
+from app.services.nasa.schemas import NASAObservation, GeoJSONGeometry
 
 
 class CMRSearchService:

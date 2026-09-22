@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from geoalchemy2.elements import WKTElement
-from server.app.models.case import (
+from app.models.case import (
     Case,
     NisarMeasurement,
     Evidence,

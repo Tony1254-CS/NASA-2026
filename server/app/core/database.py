@@ -2,7 +2,7 @@ from typing import Generator
 import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
-from server.app.core.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

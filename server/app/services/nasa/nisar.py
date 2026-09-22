@@ -1,6 +1,6 @@
 from typing import Optional, List
-from server.app.services.nasa.cmr import CMRSearchService
-from server.app.services.nasa.schemas import NASAObservation
+from app.services.nasa.cmr import CMRSearchService
+from app.services.nasa.schemas import NASAObservation
 
 
 class NisarDiscoveryService:

@@ -1,5 +1,5 @@
-from server.app.core.database import Base
-from server.app.models.case import (
+from app.core.database import Base
+from app.models.case import (
     Case,
     NisarMeasurement,
     Evidence,
