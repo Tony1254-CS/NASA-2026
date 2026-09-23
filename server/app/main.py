@@ -68,6 +68,13 @@ app.include_router(health.router)
 app.include_router(cases.router, prefix="/api")
 app.include_router(nasa.router, prefix="/api")
 
+# Mount Static Uploads for local fallback storage
+from fastapi.staticfiles import StaticFiles
+uploads_path = _server_root / "uploads"
+uploads_path.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+
+
 
 @app.get("/", include_in_schema=False)
 def root():

@@ -35,6 +35,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
   const [caseList, setCaseList] = useState<Array<{ case_id: string; event_type: string }>>([]);
 
   const [note, setNote] = useState<string>('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string | null>(null);
 
@@ -68,6 +69,13 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
       return;
     }
 
+    const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif', 'image/jpg'];
+    if (!validMimeTypes.includes(file.type.toLowerCase()) && !file.type.startsWith('image/')) {
+      setErrorMessage('Invalid file type. Please select or capture a valid image.');
+      return;
+    }
+
+    setPhotoFile(file);
     setPhotoName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
@@ -78,6 +86,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
   };
 
   const handleRemovePhoto = () => {
+    setPhotoFile(null);
     setPhotoPreview(null);
     setPhotoName(null);
     if (fileInputRef.current) {
@@ -110,7 +119,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
         longitude: location.longitude,
       };
 
-      const res = await createFieldObservation(selectedCaseId, payload);
+      const res = await createFieldObservation(selectedCaseId, payload, photoFile);
       setSubmitSuccess(res);
       setNote('');
       handleRemovePhoto();
@@ -174,6 +183,11 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
             <p className="text-[11px] text-muted-foreground font-mono">
               Observation ID: {submitSuccess.id} attached to {submitSuccess.case_id}
             </p>
+            {submitSuccess.photo_reference && (
+              <p className="text-[10px] text-emerald-400 font-mono truncate max-w-full px-2" title={submitSuccess.photo_reference}>
+                Stored Photo: {submitSuccess.photo_reference}
+              </p>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -185,6 +199,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
           </CardContent>
         </Card>
       )}
+
 
       {/* FORM CARD */}
       <Card className="border-border/60 bg-card shadow-sm">

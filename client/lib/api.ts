@@ -240,17 +240,41 @@ export async function fetchCaseTimeline(caseId: string): Promise<TimelineRespons
  */
 export async function createFieldObservation(
   caseId: string,
-  payload: FieldObservationCreatePayload
+  payload: FieldObservationCreatePayload,
+  photoFile?: File | null
 ): Promise<FieldObservationResponse> {
   const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/field-observations`);
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+
+  let requestInit: RequestInit;
+
+  if (photoFile) {
+    const formData = new FormData();
+    formData.append('file', photoFile);
+    if (payload.note) formData.append('note', payload.note);
+    formData.append('observed_at', payload.observed_at);
+    formData.append('latitude', payload.latitude.toString());
+    formData.append('longitude', payload.longitude.toString());
+    if (payload.photo_reference) formData.append('photo_reference', payload.photo_reference);
+
+    requestInit = {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+      },
+      body: formData,
+    };
+  } else {
+    requestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    };
+  }
+
+  const res = await fetch(url, requestInit);
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
@@ -259,3 +283,4 @@ export async function createFieldObservation(
 
   return res.json();
 }
+
