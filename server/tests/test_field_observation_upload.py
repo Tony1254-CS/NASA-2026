@@ -45,6 +45,18 @@ def test_multipart_photo_upload_field_observation():
     assert result["photo_reference"] is not None
     assert "field-observations" in result["photo_reference"]
     assert "test_ground_photo.png" in result["photo_reference"]
+    assert result.get("source_type") == "human_observation"
+    assert result.get("source") == "HUMAN_OBSERVATION"
+
+    # Verify that an Evidence record was created for the same case
+    ev_res = client.get(f"/api/cases/{case_id}/evidence")
+    assert ev_res.status_code == 200
+    evidence_items = ev_res.json()
+    human_ev = next((item for item in evidence_items if item["source_type"] == "human_observation"), None)
+    assert human_ev is not None
+    assert human_ev["case_id"] == case_id
+    assert human_ev["visualization_uri"] == result["photo_reference"]
+
 
 
 def test_invalid_file_extension_upload():

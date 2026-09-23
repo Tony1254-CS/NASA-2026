@@ -108,6 +108,7 @@ class FieldObservationCreate(BaseModel):
     observed_at: datetime
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
+    source_type: Optional[str] = "human_observation"
 
 
 class FieldObservationResponse(BaseModel):
@@ -119,7 +120,10 @@ class FieldObservationResponse(BaseModel):
     note: Optional[str] = None
     observed_at: datetime
     location: Optional[GeoJSONGeometry] = None
+    source_type: str = "human_observation"
+    source: str = "HUMAN_OBSERVATION"
     created_at: datetime
+
 
 
 class TimelineEventItem(BaseModel):

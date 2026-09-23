@@ -149,6 +149,8 @@ class CaseService:
                     note=fo.note,
                     observed_at=fo.observed_at,
                     location=shape_to_geojson(fo.location),
+                    source_type=getattr(fo, "source_type", "human_observation") or "human_observation",
+                    source="HUMAN_OBSERVATION",
                     created_at=fo.created_at,
                 )
                 for fo in case.field_observations
@@ -352,5 +354,7 @@ class CaseService:
             note=obs.note,
             observed_at=obs.observed_at,
             location=shape_to_geojson(obs.location),
+            source_type=getattr(obs, "source_type", "human_observation") or "human_observation",
+            source="HUMAN_OBSERVATION",
             created_at=obs.created_at,
         )

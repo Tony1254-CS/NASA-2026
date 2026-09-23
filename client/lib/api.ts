@@ -111,6 +111,8 @@ export interface FieldObservationResponse {
   note?: string | null;
   observed_at: string;
   location?: GeoJSONGeometry | null;
+  source_type?: string;
+  source?: string;
   created_at: string;
 }
 

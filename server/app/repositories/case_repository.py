@@ -80,6 +80,7 @@ class CaseRepository:
         observed_at: datetime,
         latitude: float,
         longitude: float,
+        source_type: str = "human_observation",
     ) -> Optional[FieldObservation]:
         case_exists = db.scalar(select(Case.id).where(Case.case_id == case_id))
         if not case_exists:
@@ -94,6 +95,24 @@ class CaseRepository:
             location=WKTElement(wkt_location, srid=4326),
         )
         db.add(field_obs)
+        db.flush()
+
+        # Create corresponding Evidence record for cross-mission evidence integration
+        ev = Evidence(
+            case_id=case_id,
+            source_type=source_type,
+            collection_id="GROUND_FIELD_OBSERVATION",
+            granule_id=field_obs.id,
+            time_start=observed_at,
+            time_end=observed_at,
+            role="ground_truth",
+            status="evaluated",
+            visualization_uri=photo_reference,
+        )
+        db.add(ev)
+
         db.commit()
         db.refresh(field_obs)
         return field_obs
+
+

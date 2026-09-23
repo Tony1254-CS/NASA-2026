@@ -163,3 +163,5 @@ class FieldObservation(Base):
 
     # Relationship
     case = relationship("Case", back_populates="field_observations")
+
+
