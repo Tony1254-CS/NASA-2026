@@ -52,10 +52,10 @@ def test_multipart_photo_upload_field_observation():
     ev_res = client.get(f"/api/cases/{case_id}/evidence")
     assert ev_res.status_code == 200
     evidence_items = ev_res.json()
-    human_ev = next((item for item in evidence_items if item["source_type"] == "human_observation"), None)
+    human_ev = next((item for item in evidence_items if item.get("visualization_uri") == result["photo_reference"]), None)
     assert human_ev is not None
     assert human_ev["case_id"] == case_id
-    assert human_ev["visualization_uri"] == result["photo_reference"]
+    assert human_ev["source_type"] == "human_observation"
 
 
 

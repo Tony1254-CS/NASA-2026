@@ -45,3 +45,8 @@ Thumbs.db
 *.geojson
 *.h5
 *.nc
+
+# Uploads & Local Media Storage
+server/uploads/
+uploads/
+
