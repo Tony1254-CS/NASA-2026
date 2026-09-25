@@ -102,13 +102,20 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 pb-28 sm:pb-24">
       {/* HEADER CARD */}
-      <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+      <div className="glass-panel p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="tech-corner-tl" />
+        <div className="tech-corner-tr" />
+
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-indigo-400 shrink-0" />
-            <h2 className="text-lg font-bold text-white tracking-tight">Global Pulse — Planetary Observation Matrix</h2>
+            <div className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-400/30 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.2)]">
+              <Globe className="w-5 h-5 animate-pulse" />
+            </div>
+            <h2 className="text-lg font-extrabold text-white tracking-tight font-mono flex items-center gap-2">
+              GLOBAL PULSE <span className="text-xs font-normal text-sky-400/80 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">PLANETARY MATRIX</span>
+            </h2>
           </div>
-          <p className="text-xs text-slate-400 pt-0.5">
+          <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
             Real-time planetary satellite case markers linked directly to multi-mission evidence pipelines.
           </p>
         </div>
@@ -118,7 +125,7 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
           variant="outline"
           size="sm"
           disabled={loading}
-          className="h-8 text-xs border-slate-700 text-slate-300 hover:bg-slate-800 shrink-0"
+          className="h-8 text-xs font-mono border-sky-500/30 text-sky-300 hover:bg-sky-500/20 hover:text-white shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh Pulse
@@ -126,14 +133,14 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/60 p-3.5 rounded-lg border border-slate-800/80 text-xs">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/70 p-4 rounded-xl border border-sky-500/20 text-xs shadow-inner">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Event Type:</span>
+            <span className="text-slate-400 font-mono font-medium">Event Type:</span>
             <select
               value={filterEventType}
               onChange={(e) => setFilterEventType(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="bg-slate-900 border border-sky-500/30 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400"
             >
               <option value="ALL">All Event Types</option>
               <option value="WILDFIRE">Wildfire</option>
@@ -145,11 +152,11 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Audit Verdict:</span>
+            <span className="text-slate-400 font-mono font-medium">Audit Verdict:</span>
             <select
               value={filterAuditVerdict}
               onChange={(e) => setFilterAuditVerdict(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="bg-slate-900 border border-sky-500/30 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400"
             >
               <option value="ALL">All Verdicts</option>
               <option value="SUPPORTED">SUPPORTED</option>
@@ -159,31 +166,31 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
           </div>
         </div>
 
-        <span className="text-[11px] font-mono text-slate-400 shrink-0">
-          {events.length} active event{events.length === 1 ? '' : 's'}
+        <span className="text-[11px] font-mono text-sky-400 shrink-0 bg-sky-500/10 px-2.5 py-1 rounded border border-sky-500/20">
+          {events.length} ACTIVE EVENT{events.length === 1 ? '' : 'S'}
         </span>
       </div>
 
       {/* PLANETARY SVG MAP */}
-      <Card className="bg-slate-950 border-slate-800 overflow-hidden shadow-lg relative">
-        <CardHeader className="p-4 sm:p-5 pb-2 border-b border-slate-800 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Radar className="w-4 h-4 text-indigo-400 shrink-0" />
+      <Card className="bg-slate-950/80 border-sky-500/25 overflow-hidden shadow-2xl relative">
+        <CardHeader className="p-4 sm:p-5 pb-2 border-b border-sky-500/20 flex flex-row items-center justify-between bg-slate-900/40">
+          <CardTitle className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <Radar className="w-4 h-4 text-sky-400 shrink-0 animate-pulse" />
             Planetary Interactive Projection
           </CardTitle>
-          <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 shrink-0">
+          <span className="text-[10px] font-mono text-sky-300 bg-sky-500/15 px-2.5 py-0.5 rounded-full border border-sky-400/30 shrink-0">
             WGS84 Equirectangular Grid
           </span>
         </CardHeader>
-        <CardContent className="p-0 relative min-h-[280px] bg-slate-950 flex items-center justify-center">
+        <CardContent className="p-0 relative min-h-[300px] bg-[#050914] flex items-center justify-center">
           {/* World Grid SVG Background */}
-          <svg className="w-full h-full min-h-[280px] opacity-30 pointer-events-none" viewBox="0 0 800 400" fill="none">
-            <line x1="0" y1="200" x2="800" y2="200" stroke="#64748b" strokeDasharray="4 4" strokeWidth="1" />
-            <line x1="400" y1="0" x2="400" y2="400" stroke="#64748b" strokeDasharray="4 4" strokeWidth="1" />
-            <rect x="100" y="50" width="600" height="300" stroke="#334155" strokeWidth="0.5" fill="none" />
-            <path d="M150,120 Q200,90 280,110 T320,180 L250,220 Z" fill="#1e293b" opacity="0.6" />
-            <path d="M420,100 Q500,80 620,120 T680,200 L550,260 Z" fill="#1e293b" opacity="0.6" />
-            <path d="M450,220 Q500,240 520,300 T480,340 Z" fill="#1e293b" opacity="0.6" />
+          <svg className="w-full h-full min-h-[300px] opacity-35 pointer-events-none" viewBox="0 0 800 400" fill="none">
+            <line x1="0" y1="200" x2="800" y2="200" stroke="#38bdf8" strokeDasharray="4 4" strokeWidth="0.8" opacity="0.4" />
+            <line x1="400" y1="0" x2="400" y2="400" stroke="#38bdf8" strokeDasharray="4 4" strokeWidth="0.8" opacity="0.4" />
+            <rect x="50" y="30" width="700" height="340" stroke="#1e293b" strokeWidth="1" fill="none" />
+            <path d="M150,120 Q200,90 280,110 T320,180 L250,220 Z" fill="#0f172a" stroke="#1e293b" opacity="0.8" />
+            <path d="M420,100 Q500,80 620,120 T680,200 L550,260 Z" fill="#0f172a" stroke="#1e293b" opacity="0.8" />
+            <path d="M450,220 Q500,240 520,300 T480,340 Z" fill="#0f172a" stroke="#1e293b" opacity="0.8" />
           </svg>
 
           {/* REAL CASE MARKERS */}
@@ -205,16 +212,19 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
                     title={`${evt.case_id} (${evt.event_type})`}
                   >
                     <div className="relative group">
+                      {isSelected && (
+                        <span className="absolute -inset-2 rounded-full bg-sky-400/30 animate-ping pointer-events-none" />
+                      )}
                       <span
-                        className={`block w-4 h-4 rounded-full border-2 shadow-md ${
+                        className={`block w-4.5 h-4.5 rounded-full border-2 shadow-[0_0_12px_rgba(0,0,0,0.8)] ${
                           evt.audit_verdict === 'SUPPORTED'
-                            ? 'bg-emerald-500 border-emerald-300'
+                            ? 'bg-emerald-500 border-emerald-300 shadow-emerald-500/50'
                             : evt.audit_verdict === 'REJECTED'
-                            ? 'bg-rose-500 border-rose-300'
-                            : 'bg-amber-500 border-amber-300'
-                        } ${isSelected ? 'ring-4 ring-indigo-500/50 animate-pulse' : ''}`}
+                            ? 'bg-rose-500 border-rose-300 shadow-rose-500/50'
+                            : 'bg-amber-500 border-amber-300 shadow-amber-500/50'
+                        } ${isSelected ? 'ring-4 ring-sky-400/60' : ''}`}
                       />
-                      <span className="absolute left-1/2 -translate-x-1/2 top-5 whitespace-nowrap text-[9px] font-mono font-bold bg-slate-900/90 text-slate-200 px-1.5 py-0.5 rounded border border-slate-800 shadow pointer-events-none">
+                      <span className="absolute left-1/2 -translate-x-1/2 top-6 whitespace-nowrap text-[9px] font-mono font-bold bg-slate-950/90 text-sky-300 px-2 py-0.5 rounded border border-sky-500/30 shadow-lg pointer-events-none">
                         {evt.case_id}
                       </span>
                     </div>
@@ -226,12 +236,12 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
 
           {/* EMPTY STATE */}
           {!loading && events.length === 0 && (
-            <div className="absolute inset-0 min-h-[280px] flex flex-col items-center justify-center p-6 text-center space-y-3 z-10 max-w-sm mx-auto">
-              <AlertTriangle className="w-8 h-8 text-amber-500 shrink-0" />
-              <h3 className="text-sm font-semibold text-slate-300">
+            <div className="absolute inset-0 min-h-[300px] flex flex-col items-center justify-center p-6 text-center space-y-3 z-10 max-w-sm mx-auto">
+              <AlertTriangle className="w-8 h-8 text-amber-400 shrink-0" />
+              <h3 className="text-sm font-semibold text-slate-300 font-mono">
                 {filterAuditVerdict === 'SUPPORTED' ? 'No supported TRACE events available.' : 'No TRACE events available.'}
               </h3>
-              <p className="text-xs text-slate-500 leading-normal">
+              <p className="text-xs text-slate-400 leading-normal">
                 No active satellite investigation cases match the selected pulse filters.
               </p>
             </div>
@@ -241,51 +251,55 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
 
       {/* SELECTED CASE METADATA DRAWER / PANEL */}
       {selectedEvent && (
-        <Card className="bg-slate-900/80 border-slate-800 shadow-md">
+        <Card className="glass-panel border-sky-500/30 shadow-xl relative overflow-hidden">
+          <div className="tech-corner-bl" />
+          <div className="tech-corner-br" />
+
           <CardHeader className="p-4 sm:p-5 pb-2 flex flex-row items-center justify-between">
             <div>
-              <span className="text-[10px] font-mono font-semibold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                {selectedEvent.case_id}
+              <span className="text-[10px] font-mono font-bold text-sky-300 uppercase tracking-widest bg-sky-500/15 px-2.5 py-0.5 rounded border border-sky-400/30">
+                CASE // {selectedEvent.case_id}
               </span>
-              <CardTitle className="text-base font-bold text-white capitalize mt-1">
+              <CardTitle className="text-base font-extrabold text-white capitalize mt-1.5 tracking-tight font-mono">
                 {selectedEvent.event_type} Investigation
               </CardTitle>
             </div>
             {getVerdictBadge(selectedEvent.audit_verdict)}
           </CardHeader>
+
           <CardContent className="p-4 sm:p-5 pt-2 space-y-4 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/70 p-3.5 rounded-xl border border-sky-500/20">
               <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Location</span>
-                <p className="font-mono text-slate-300 font-medium truncate mt-0.5">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Coordinates</span>
+                <p className="font-mono text-sky-300 font-semibold truncate mt-1">
                   {selectedEvent.latitude != null && selectedEvent.longitude != null
                     ? `${selectedEvent.latitude.toFixed(4)}°, ${selectedEvent.longitude.toFixed(4)}°`
-                    : 'Location unavailable'}
+                    : 'Unavailable'}
                 </p>
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Detection Window</span>
-                <p className="text-slate-300 font-medium truncate mt-0.5">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Detection Window</span>
+                <p className="font-mono text-slate-200 font-semibold truncate mt-1">
                   {new Date(selectedEvent.observation_start).toLocaleDateString()}
                 </p>
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Ground Truth</span>
-                <p className="text-slate-300 font-medium mt-0.5">{selectedEvent.ground_truth_count} Reports</p>
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Ground Truth</span>
+                <p className="font-mono text-slate-200 font-semibold mt-1">{selectedEvent.ground_truth_count} Reports</p>
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Provenance</span>
-                <p className="text-slate-300 font-medium mt-0.5">{selectedEvent.provenance_count} Records</p>
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Provenance</span>
+                <p className="font-mono text-slate-200 font-semibold mt-1">{selectedEvent.provenance_count} Records</p>
               </div>
             </div>
 
             {onSelectCase && (
               <Button
                 onClick={() => onSelectCase(selectedEvent.case_id)}
-                className="w-full h-9 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider gap-2 shadow-sm"
+                className="w-full h-10 bg-sky-500 text-slate-950 hover:bg-sky-400 text-xs font-mono font-bold uppercase tracking-wider gap-2 shadow-lg shadow-sky-500/20"
               >
                 Open Mission Control Case ({selectedEvent.case_id})
                 <ChevronRight className="w-4 h-4" />

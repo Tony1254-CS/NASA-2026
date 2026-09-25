@@ -92,9 +92,9 @@ export function ChangeLensesView({ caseDetail }: ChangeLensesViewProps) {
 
   return (
     <div className="space-y-4" role="region" aria-label="Analytical Change Lenses">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+      <div className="glass-panel p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-sky-500/20">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h2 className="text-base font-extrabold text-white flex items-center gap-2 font-mono">
             <Eye className="w-4 h-4 text-sky-400" aria-hidden="true" />
             Analytical Change Lenses
           </h2>
@@ -118,41 +118,41 @@ export function ChangeLensesView({ caseDetail }: ChangeLensesViewProps) {
               onClick={() => setActiveLens(lens.id)}
               className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
                 isSelected
-                  ? 'bg-slate-800/90 border-indigo-500 shadow-md ring-1 ring-indigo-500/50'
-                  : 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/50 hover:border-slate-700'
+                  ? 'bg-sky-500/15 border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.25)] ring-1 ring-sky-400/50'
+                  : 'bg-slate-950/70 border-sky-500/20 hover:bg-slate-900/60 hover:border-sky-500/40'
               }`}
             >
               <div className="flex items-center justify-between w-full mb-2">
-                <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-400' : 'text-slate-400'}`} aria-hidden="true" />
+                <Icon className={`w-4 h-4 ${isSelected ? 'text-sky-300' : 'text-slate-400'}`} aria-hidden="true" />
                 {lens.available ? (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                     AVAILABLE
                   </span>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-500 border border-slate-700">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-800 text-slate-500 border border-slate-700">
                     UNAVAILABLE
                   </span>
                 )}
               </div>
-              <div className="font-bold text-xs text-slate-200">{lens.label}</div>
+              <div className="font-mono font-bold text-xs text-slate-200">{lens.label}</div>
             </button>
           );
         })}
       </div>
 
       {/* Active Lens Detail Panel */}
-      <Card id={`lens-panel-${activeLens}`} className="bg-slate-900/80 border-slate-800">
+      <Card id={`lens-panel-${activeLens}`} className="glass-panel border-sky-500/20 shadow-xl">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+            <CardTitle className="text-sm font-bold font-mono text-white flex items-center gap-2">
               {activeLens} Lens Analytics
             </CardTitle>
             {getLensAvailability(activeLens) ? (
-              <span className="inline-flex items-center gap-1 text-xs text-emerald-400 font-medium">
+              <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> Real Sensor Payload Active
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-xs text-amber-400 font-medium">
+              <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-amber-400">
                 <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" /> Data Unavailable for Lens
               </span>
             )}
@@ -163,26 +163,26 @@ export function ChangeLensesView({ caseDetail }: ChangeLensesViewProps) {
         </CardHeader>
         <CardContent className="text-xs">
           {getLensAvailability(activeLens) ? (
-            <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800/80 space-y-2">
+            <div className="p-4 rounded-xl bg-slate-950/80 border border-sky-500/20 space-y-2 font-mono shadow-inner">
               <div className="flex justify-between items-center text-slate-300">
-                <span className="font-medium">Primary Sensor Signal</span>
-                <span className="font-mono text-indigo-400">
+                <span className="font-semibold text-slate-400">Primary Sensor Signal</span>
+                <span className="font-bold text-sky-300">
                   {latestNisar?.delta_backscatter ? `${latestNisar.delta_backscatter} dB` : 'Active'}
                 </span>
               </div>
               <div className="flex justify-between items-center text-slate-300">
-                <span className="font-medium">Target Event Context</span>
-                <span className="font-mono text-slate-300">{caseDetail?.event_type}</span>
+                <span className="font-semibold text-slate-400">Target Event Context</span>
+                <span className="font-bold text-slate-200">{caseDetail?.event_type}</span>
               </div>
-              <p className="text-[11px] text-slate-400 pt-1 leading-normal">
+              <p className="text-[11px] font-sans text-slate-400 pt-1 leading-relaxed">
                 Analytical lens processing confirms active radar change signature corresponding to {activeLens.toLowerCase()} domain criteria.
               </p>
             </div>
           ) : (
-            <div className="p-6 rounded-lg bg-slate-950/80 border border-slate-800/80 text-center space-y-2">
+            <div className="p-6 rounded-xl bg-slate-950/80 border border-slate-800 text-center space-y-2">
               <HelpCircle className="w-6 h-6 text-slate-600 mx-auto" aria-hidden="true" />
-              <div className="font-semibold text-slate-300">Underlying Data Unavailable</div>
-              <p className="text-slate-500 text-[11px] max-w-md mx-auto">
+              <div className="font-mono font-bold text-slate-300">Underlying Data Unavailable</div>
+              <p className="text-slate-500 text-[11px] max-w-md mx-auto leading-normal">
                 No simulated or fabricated data is displayed. The {activeLens} analytical lens is inactive because required underlying sensor imagery/interferograms were not acquired for this case.
               </p>
             </div>

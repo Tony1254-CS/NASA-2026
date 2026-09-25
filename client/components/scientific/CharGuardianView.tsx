@@ -137,13 +137,20 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
   return (
     <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 pb-28 sm:pb-24">
       {/* HEADER CARD */}
-      <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+      <div className="glass-panel p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="tech-corner-tl" />
+        <div className="tech-corner-tr" />
+
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Anchor className="w-5 h-5 text-emerald-400 shrink-0" />
-            <h2 className="text-lg font-bold text-white tracking-tight">Char Guardian — River-Island Change Engine</h2>
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.2)]">
+              <Anchor className="w-5 h-5 animate-pulse" />
+            </div>
+            <h2 className="text-lg font-extrabold text-white tracking-tight font-mono flex items-center gap-2">
+              CHAR GUARDIAN <span className="text-xs font-normal text-emerald-400/80 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">RIVER-ISLAND ENGINE</span>
+            </h2>
           </div>
-          <p className="text-xs text-slate-400 pt-0.5">
+          <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
             Real Earth-observation SAR change monitoring for river island & coastal land dynamics in Bangladesh.
           </p>
         </div>
@@ -152,10 +159,10 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
           <select
             value={selectedCaseId || ''}
             onChange={(e) => setSelectedCaseId(e.target.value)}
-            className="w-full sm:w-auto bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full sm:w-auto bg-slate-900/90 border border-sky-500/30 rounded-lg px-3 py-1.5 text-xs font-mono font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 shadow-inner"
           >
             {cases.map((c) => (
-              <option key={c.case_id} value={c.case_id}>
+              <option key={c.case_id} value={c.case_id} className="bg-slate-900 text-slate-200">
                 {c.case_id} — {c.event_type.toUpperCase()}
               </option>
             ))}
@@ -164,9 +171,9 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
       </div>
 
       {loadingHistory && (
-        <Card className="bg-slate-900/50 border-slate-800">
-          <CardContent className="p-8 min-h-[160px] flex flex-col items-center justify-center gap-3 text-center text-xs text-slate-400">
-            <RefreshCw className="w-5 h-5 text-emerald-400 animate-spin" />
+        <Card className="glass-panel border-sky-500/20">
+          <CardContent className="p-10 min-h-[160px] flex flex-col items-center justify-center gap-3 text-center text-xs font-mono text-slate-400">
+            <RefreshCw className="w-6 h-6 text-emerald-400 animate-spin" />
             <span>Loading Char Guardian Earth-Observation Data...</span>
           </CardContent>
         </Card>
@@ -175,20 +182,23 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
       {!loadingHistory && charHistory && (
         <>
           {/* SECTION 1: CHAR OVERVIEW & SAR CHANGE METRICS */}
-          <Card className="bg-slate-900/80 border-emerald-500/30 shadow-lg relative overflow-hidden">
+          <Card className="glass-panel border-emerald-500/30 shadow-xl relative overflow-hidden">
+            <div className="tech-corner-tl" />
+            <div className="tech-corner-tr" />
+
             <CardHeader className="p-4 sm:p-5 pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[10px] font-mono font-semibold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                  {charHistory.char_name_or_id}
+                <span className="text-[10px] font-mono font-extrabold text-emerald-300 uppercase tracking-widest bg-emerald-500/15 px-2.5 py-0.5 rounded border border-emerald-400/30 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
+                  CHAR // {charHistory.char_name_or_id}
                 </span>
                 {getChangeStatusBadge(charHistory.change_status)}
               </div>
 
-              <CardTitle className="text-base font-bold text-white capitalize mt-2 flex items-center gap-2">
+              <CardTitle className="text-base font-extrabold text-white capitalize mt-2 flex items-center gap-2 font-mono tracking-tight">
                 {charHistory.event_type} — Char Island AOI
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
+              <CardDescription className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                <Calendar className="w-3.5 h-3.5 text-sky-400" />
                 Observation Period: {new Date(charHistory.observation_start).toLocaleDateString()} to{' '}
                 {new Date(charHistory.observation_end).toLocaleDateString()}
               </CardDescription>
@@ -196,59 +206,59 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
 
             <CardContent className="p-4 sm:p-5 pt-2 space-y-4 text-xs">
               {/* BOUNDARY & COORDINATE DISPLAY */}
-              <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
-                <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="bg-slate-950/70 p-3.5 rounded-xl border border-sky-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono shadow-inner">
+                <div className="flex items-center gap-2 text-slate-300">
                   <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span className="break-all">
+                  <span className="break-all font-semibold">
                     Centroid:{' '}
                     {charHistory.latitude != null && charHistory.longitude != null
                       ? `${charHistory.latitude.toFixed(4)}°, ${charHistory.longitude.toFixed(4)}°`
-                      : 'Coordinates unavailable'}
+                      : 'Unavailable'}
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-500">
-                  {charHistory.geometry ? 'Polygon Geometry Active' : 'Char boundary unavailable.'}
+                <span className="text-[10px] font-mono text-sky-400/80 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                  {charHistory.geometry ? 'Polygon Geometry Active' : 'Boundary unavailable.'}
                 </span>
               </div>
 
               {/* PRIMARY SAR MEASUREMENTS */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase">Backscatter Change</span>
-                  <p className="text-sm font-bold font-mono text-emerald-400">
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-sky-500/20 space-y-1 shadow-inner">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Backscatter Change</span>
+                  <p className="text-sm font-extrabold font-mono text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
                     {charHistory.latest_delta_backscatter != null
                       ? `${charHistory.latest_delta_backscatter.toFixed(2)} dB`
                       : 'Unavailable'}
                   </p>
                 </div>
 
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase">Affected Area</span>
-                  <p className="text-sm font-bold font-mono text-white">
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-sky-500/20 space-y-1 shadow-inner">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Affected Area</span>
+                  <p className="text-sm font-extrabold font-mono text-white">
                     {charHistory.latest_affected_area != null
                       ? `${charHistory.latest_affected_area.toFixed(1)} km²`
                       : 'Unavailable'}
                   </p>
                 </div>
 
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase">Evidence State</span>
-                  <p className="text-xs font-bold text-slate-300 truncate">{charHistory.evidence_status}</p>
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-sky-500/20 space-y-1 shadow-inner">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Evidence State</span>
+                  <p className="text-xs font-mono font-bold text-slate-200 truncate mt-1">{charHistory.evidence_status}</p>
                 </div>
 
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase">Self-Audit Verdict</span>
-                  <p className="text-xs font-bold text-slate-300 truncate">{charHistory.audit_verdict}</p>
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-sky-500/20 space-y-1 shadow-inner">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Self-Audit Verdict</span>
+                  <p className="text-xs font-mono font-bold text-sky-300 truncate mt-1">{charHistory.audit_verdict}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* SECTION 2: GROUND TRUTH REPORTS AGGREGATION */}
-          <Card className="bg-slate-900/80 border-slate-800">
+          <Card className="glass-panel border-sky-500/20 shadow-lg">
             <CardHeader className="p-4 sm:p-5 pb-2">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+                <CardTitle className="text-sm font-bold font-mono text-white flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                   Ground Truth Verification Aggregation
                 </CardTitle>
@@ -257,36 +267,36 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
                     onClick={onNavigateToVerify}
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 shrink-0"
+                    className="h-8 text-xs font-mono border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20 hover:text-white shrink-0"
                   >
                     Submit Ground Observation
                   </Button>
                 )}
               </div>
-              <CardDescription className="text-xs text-slate-400">
+              <CardDescription className="text-xs text-slate-400 font-sans">
                 Aggregated field verification reports submitted by ground observers.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 sm:p-5 pt-2 text-xs">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-500 uppercase font-medium">Total Reports</span>
-                  <p className="text-base font-bold text-white mt-0.5">{charHistory.ground_truth.total_reports}</p>
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-sky-500/20 shadow-inner">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase font-medium block">Total Reports</span>
+                  <p className="text-lg font-mono font-extrabold text-white mt-0.5">{charHistory.ground_truth.total_reports}</p>
                 </div>
 
-                <div className="bg-emerald-950/30 p-3 rounded-lg border border-emerald-800/40">
-                  <span className="text-[10px] text-emerald-400 uppercase font-medium">Confirmed</span>
-                  <p className="text-base font-bold text-emerald-400 mt-0.5">{charHistory.ground_truth.confirmed_reports}</p>
+                <div className="bg-emerald-950/30 p-3 rounded-xl border border-emerald-500/30 shadow-inner">
+                  <span className="text-[10px] font-mono text-emerald-400 uppercase font-medium block">Confirmed</span>
+                  <p className="text-lg font-mono font-extrabold text-emerald-400 mt-0.5">{charHistory.ground_truth.confirmed_reports}</p>
                 </div>
 
-                <div className="bg-rose-950/30 p-3 rounded-lg border border-rose-800/40">
-                  <span className="text-[10px] text-rose-400 uppercase font-medium">Denied</span>
-                  <p className="text-base font-bold text-rose-400 mt-0.5">{charHistory.ground_truth.denied_reports}</p>
+                <div className="bg-rose-950/30 p-3 rounded-xl border border-rose-500/30 shadow-inner">
+                  <span className="text-[10px] font-mono text-rose-400 uppercase font-medium block">Denied</span>
+                  <p className="text-lg font-mono font-extrabold text-rose-400 mt-0.5">{charHistory.ground_truth.denied_reports}</p>
                 </div>
 
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-500 uppercase font-medium">Pending</span>
-                  <p className="text-base font-bold text-slate-400 mt-0.5">{charHistory.ground_truth.pending_reports}</p>
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-sky-500/20 shadow-inner">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase font-medium block">Pending</span>
+                  <p className="text-lg font-mono font-extrabold text-slate-300 mt-0.5">{charHistory.ground_truth.pending_reports}</p>
                 </div>
               </div>
             </CardContent>
@@ -294,31 +304,31 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
 
           {/* SECTION 3: THRESHOLD ALERT FOUNDATION */}
           {charHistory.alerts && charHistory.alerts.length > 0 && (
-            <Card className="bg-slate-900/80 border-slate-800">
+            <Card className="glass-panel border-sky-500/20">
               <CardHeader className="p-4 sm:p-5 pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <BellRing className="w-4 h-4 text-amber-400 shrink-0" />
+                <CardTitle className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                  <BellRing className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
                   Configured Anomaly Threshold Alert Status
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2 space-y-2.5 text-xs">
                 {charHistory.alerts.map((a) => (
-                  <div key={a.id} className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div key={a.id} className="p-3.5 rounded-xl bg-slate-950/70 border border-sky-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-inner">
                     <div className="min-w-0 flex-1">
-                      <span className="font-semibold text-slate-200">
+                      <span className="font-mono font-bold text-slate-200">
                         {a.metric_name} ({a.comparison} {a.threshold_value})
                       </span>
-                      <p className="text-[11px] text-slate-400 leading-normal">
+                      <p className="text-[11px] text-slate-400 leading-normal mt-0.5">
                         {a.triggered_state === 'TRIGGERED'
                           ? 'Observed change exceeded the configured threshold.'
                           : 'Alert configured and active.'}
                       </p>
                     </div>
                     <span
-                      className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded shrink-0 self-start sm:self-center ${
+                      className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full shrink-0 self-start sm:self-center ${
                         a.triggered_state === 'TRIGGERED'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse'
-                          : 'bg-emerald-500/10 text-emerald-400'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.3)]'
+                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       }`}
                     >
                       {a.triggered_state}
@@ -330,20 +340,20 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
           )}
 
           {/* SECTION 4: HISTORICAL TIMELINE */}
-          <Card className="bg-slate-900/80 border-slate-800">
+          <Card className="glass-panel border-sky-500/20">
             <CardHeader className="p-4 sm:p-5 pb-2">
-              <CardTitle className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
+              <CardTitle className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-sky-400 shrink-0" />
                 Chronological Observation History
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-5 pt-2 text-xs">
               {charHistory.historical_observations.length > 0 ? (
-                <div className="space-y-3 border-l-2 border-indigo-500/30 ml-2 pl-4">
+                <div className="space-y-3 border-l-2 border-sky-500/30 ml-2 pl-4">
                   {charHistory.historical_observations.map((evt) => (
                     <div key={evt.id} className="relative space-y-0.5">
-                      <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-indigo-400 ring-4 ring-slate-900" />
-                      <p className="font-semibold text-white leading-snug">{evt.title}</p>
+                      <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-slate-950" />
+                      <p className="font-mono font-bold text-white leading-snug">{evt.title}</p>
                       <p className="text-[10px] text-slate-400 font-mono">
                         {new Date(evt.timestamp).toLocaleString()} ({evt.phase.toUpperCase()})
                       </p>
@@ -351,26 +361,26 @@ export function CharGuardianView({ initialCaseId, onNavigateToVerify }: CharGuar
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 italic">Historical observation data unavailable.</p>
+                <p className="text-slate-400 italic font-mono">Historical observation data unavailable.</p>
               )}
             </CardContent>
           </Card>
 
           {/* SECTION 5: PROVENANCE LINEAGE */}
           {charHistory.provenance_records && charHistory.provenance_records.length > 0 && (
-            <Card className="bg-slate-900/80 border-slate-800">
+            <Card className="glass-panel border-sky-500/20">
               <CardHeader className="p-4 sm:p-5 pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                <CardTitle className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-sky-400 shrink-0" />
                   Lineage & Provenance Metadata ({charHistory.provenance_records.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2 space-y-2 text-xs">
                 {charHistory.provenance_records.map((p) => (
-                  <div key={p.id} className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 space-y-1 font-mono text-[11px] break-words">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 font-semibold text-indigo-300">
+                  <div key={p.id} className="p-3.5 rounded-xl bg-slate-950/70 border border-sky-500/20 space-y-1 font-mono text-[11px] break-words shadow-inner">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 font-bold text-sky-300">
                       <span className="break-all">{p.product_id || p.collection_id || 'NASA Data'}</span>
-                      <span className="text-slate-400 text-[10px]">{p.processing_method}</span>
+                      <span className="text-slate-400 text-[10px] font-normal">{p.processing_method}</span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-sans">
                       Calculation: {p.calculation_method || 'SPATIAL_TEMPORAL_CROSS_CORRELATION'} — Ref: {p.source_reference || 'NASA CMR'}

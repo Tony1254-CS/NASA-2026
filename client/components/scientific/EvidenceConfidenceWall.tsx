@@ -130,13 +130,16 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
   return (
     <div className="space-y-6" role="region" aria-label="Evidence and Confidence Wall">
       {/* Header & Controls */}
-      <div className="flex flex-col gap-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+      <div className="glass-panel p-5 rounded-2xl flex flex-col gap-4 border-sky-500/20 relative overflow-hidden">
+        <div className="tech-corner-tl" />
+        <div className="tech-corner-tr" />
+
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0" aria-hidden="true" />
-            Evidence & Self-Audit Matrix
+          <h2 className="text-lg font-extrabold text-white flex items-center gap-2 font-mono">
+            <ShieldCheck className="w-5 h-5 text-sky-400 shrink-0 animate-pulse" aria-hidden="true" />
+            EVIDENCE & SELF-AUDIT MATRIX
           </h2>
-          <p className="text-xs text-slate-400 pt-0.5">
+          <p className="text-xs text-slate-400 pt-0.5 leading-relaxed">
             Cross-mission satellite observations, deterministic self-audit checks, scenario simulator, and autonomous sentinel agents.
           </p>
         </div>
@@ -146,7 +149,7 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
             onClick={handleRunEvaluation}
             disabled={loading}
             size="sm"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-sm transition-all"
+            className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono font-bold text-xs shadow-lg shadow-sky-500/20 transition-all"
           >
             {loading ? (
               <Activity className="w-3.5 h-3.5 animate-spin mr-1.5" aria-hidden="true" />
@@ -161,17 +164,17 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
             disabled={loadingAgents}
             size="sm"
             variant="outline"
-            className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10 font-medium text-xs transition-all"
+            className="border-sky-500/30 text-sky-300 hover:bg-sky-500/15 font-mono font-bold text-xs transition-all"
           >
             {loadingAgents ? (
-              <Activity className="w-3.5 h-3.5 animate-spin mr-1.5" aria-hidden="true" />
+              <Activity className="w-3.5 h-3.5 animate-spin mr-1.5 text-sky-400" aria-hidden="true" />
             ) : (
-              <Bot className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+              <Bot className="w-3.5 h-3.5 mr-1.5 text-sky-400" aria-hidden="true" />
             )}
             {loadingAgents ? 'Running Agents...' : 'Run Sentinel Agents'}
           </Button>
 
-          <div className="flex flex-wrap items-center gap-1 bg-slate-950/80 p-1 rounded-lg border border-slate-800">
+          <div className="flex flex-wrap items-center gap-1 bg-slate-950/80 p-1 rounded-lg border border-sky-500/20 shadow-inner">
             <span className="text-[10px] font-mono text-slate-400 px-1">Scenario:</span>
             {[0.5, 1.0, 2.0].map((offset) => (
               <Button
@@ -181,7 +184,7 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
                 size="sm"
                 variant="outline"
                 className={`h-6 text-[10px] px-2 font-mono ${
-                  waterOffset === offset && scenarioData ? 'bg-sky-500/20 text-sky-400 font-bold border-sky-500/40' : 'text-slate-400 hover:text-white border-slate-800'
+                  waterOffset === offset && scenarioData ? 'bg-sky-500 text-slate-950 font-bold shadow-[0_0_8px_rgba(56,189,248,0.4)]' : 'text-slate-400 hover:text-white border-slate-800'
                 }`}
               >
                 +{offset}m
@@ -193,10 +196,10 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
 
       {/* Audit Summary Banner */}
       {auditData && (
-        <Card className="bg-slate-900/80 border-slate-800 shadow-md">
+        <Card className="glass-panel border-sky-500/30 shadow-xl relative overflow-hidden">
           <CardHeader className="p-4 sm:p-5 pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <CardTitle className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+              <CardTitle className="text-sm font-mono font-bold text-slate-200 uppercase tracking-widest">
                 Overall Self-Audit State
               </CardTitle>
               {getStatusBadge(auditData.overall_audit_state)}
@@ -206,9 +209,9 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-0">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs">
-              <span className="text-slate-400 font-medium">Deterministic Confidence Score</span>
-              <span className="font-mono font-bold text-indigo-400 text-sm">
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/70 border border-sky-500/20 text-xs shadow-inner">
+              <span className="text-slate-400 font-mono font-semibold">Deterministic Confidence Score</span>
+              <span className="font-mono font-extrabold text-sky-300 text-sm">
                 {(auditData.confidence_score * 100).toFixed(0)}%
               </span>
             </div>
@@ -230,10 +233,10 @@ export function EvidenceConfidenceWall({ caseId, initialEvidence, initialAudit }
             role="tab"
             aria-selected={activeCategory === cat.id}
             onClick={() => setActiveCategory(cat.id as any)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all whitespace-nowrap ${
               activeCategory === cat.id
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.3)] font-bold'
+                : 'bg-slate-950/70 text-slate-400 border border-sky-500/20 hover:bg-slate-900/60 hover:text-slate-200'
             }`}
           >
             {cat.label}

@@ -180,13 +180,18 @@ export function ScanScreen({
   return (
     <div className="space-y-4 pb-20 max-w-md mx-auto px-4">
       {/* SECTION 1: LOCATION STATUS CARD */}
-      <Card className="border-border/60 bg-card/60 backdrop-blur-sm">
+      <Card className="glass-panel border-sky-500/20 shadow-md relative overflow-hidden">
+        <div className="tech-corner-tl" />
+        <div className="tech-corner-tr" />
+
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Device Location
+              <div className="p-1 rounded bg-sky-500/10 border border-sky-400/30 text-sky-400">
+                <MapPin className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-300">
+                Device Location Lock
               </span>
             </div>
 
@@ -195,7 +200,7 @@ export function ScanScreen({
               size="sm"
               onClick={requestLocation}
               disabled={locationStatus === 'loading'}
-              className="h-7 text-xs px-2.5 gap-1.5"
+              className="h-7 text-xs font-mono border-sky-500/30 text-sky-300 hover:bg-sky-500/15 px-2.5 gap-1.5"
             >
               <RefreshCw className={`h-3 w-3 ${locationStatus === 'loading' ? 'animate-spin' : ''}`} />
               Refresh
@@ -204,46 +209,46 @@ export function ScanScreen({
 
           {/* Location Status Message */}
           {locationStatus === 'loading' && (
-            <p className="text-xs text-amber-500 font-medium animate-pulse flex items-center gap-1.5">
+            <p className="text-xs font-mono text-amber-400 font-medium animate-pulse flex items-center gap-1.5">
               <Compass className="h-3.5 w-3.5 animate-spin" />
-              Acquiring GPS location lock...
+              ACQUIRING GPS SATELLITE LOCK...
             </p>
           )}
 
           {locationStatus === 'granted' && location && (
-            <div className="flex items-center justify-between bg-muted/40 rounded-lg p-2.5 border border-border/40">
+            <div className="flex items-center justify-between bg-slate-950/70 rounded-lg p-2.5 border border-sky-500/20 shadow-inner">
               <div className="space-y-0.5">
-                <p className="text-xs font-mono font-medium text-foreground">
+                <p className="text-xs font-mono font-bold text-sky-300 tracking-tight">
                   {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
                 </p>
 
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] font-mono text-slate-400">
                   Accuracy: ±{Math.round(location.accuracy || 0)}m
                 </p>
               </div>
 
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
                 <CheckCircle2 className="h-3 w-3" />
-                Active
+                ACTIVE
               </span>
             </div>
           )}
 
           {locationStatus === 'denied' && (
-            <div className="text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 space-y-1">
-              <p className="font-semibold flex items-center gap-1">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                Location Permission Denied
+            <div className="text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg p-2.5 space-y-1">
+              <p className="font-semibold font-mono text-[11px] flex items-center gap-1">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                GPS PERMISSION DENIED
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-slate-400 leading-normal">
                 Showing selected TRACE investigation. Grant GPS permission to auto-detect nearby cases.
               </p>
             </div>
           )}
 
           {locationStatus === 'unavailable' && (
-            <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-2.5">
-              <p className="font-medium">{locationError || 'GPS location unavailable.'}</p>
+            <div className="text-xs text-slate-400 bg-slate-950/60 rounded-lg p-2.5 border border-slate-800">
+              <p className="font-mono text-[11px]">{locationError || 'GPS location unavailable.'}</p>
             </div>
           )}
         </CardContent>
@@ -252,12 +257,12 @@ export function ScanScreen({
       {/* SECTION 2: CASE SELECTION */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Radar className="h-3.5 w-3.5 text-primary" />
-            TRACE Investigation
+          <label className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Radar className="h-3.5 w-3.5 text-sky-400" />
+            TRACE Investigation Target
           </label>
-          <span className="text-[11px] text-muted-foreground font-mono">
-            {cases.length} case{cases.length === 1 ? '' : 's'} available
+          <span className="text-[10px] font-mono text-sky-400/80 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+            {cases.length} AVAILABLE
           </span>
         </div>
 
@@ -265,11 +270,11 @@ export function ScanScreen({
           <select
             value={selectedCaseId || ''}
             onChange={(e) => setSelectedCaseId(e.target.value)}
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full bg-slate-900/90 border border-sky-500/30 rounded-lg px-3 py-2 text-xs font-mono font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 shadow-inner"
           >
             {cases.map((c) => (
-              <option key={c.case_id} value={c.case_id}>
-                {c.case_id} — {c.event_type.toUpperCase()} ({c.status})
+              <option key={c.case_id} value={c.case_id} className="bg-slate-900 text-slate-200">
+                {c.case_id} — {c.event_type.toUpperCase()} ({c.status.toUpperCase()})
               </option>
             ))}
           </select>
@@ -278,14 +283,14 @@ export function ScanScreen({
 
       {/* SECTION 3: API ERROR / RETRY */}
       {apiError && (
-        <Card className="border-destructive/40 bg-destructive/10">
+        <Card className="border-rose-500/30 bg-rose-950/20 backdrop-blur-md">
           <CardContent className="p-4 text-center space-y-3">
-            <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
+            <AlertTriangle className="h-8 w-8 text-rose-400 mx-auto" />
             <div className="space-y-1">
-              <h3 className="text-xs font-bold text-destructive">Backend Server Unreachable</h3>
-              <p className="text-[11px] text-muted-foreground">{apiError}</p>
+              <h3 className="text-xs font-bold font-mono text-rose-300 uppercase">Backend Server Unreachable</h3>
+              <p className="text-[11px] text-slate-400">{apiError}</p>
             </div>
-            <Button size="sm" variant="outline" onClick={loadCaseList} className="h-8 text-xs">
+            <Button size="sm" variant="outline" onClick={loadCaseList} className="h-8 text-xs font-mono border-rose-500/40 text-rose-300">
               <RefreshCw className="h-3 w-3 mr-1.5" />
               Retry Connection
             </Button>
@@ -295,13 +300,13 @@ export function ScanScreen({
 
       {/* SECTION 4: LOADING SKELETON */}
       {loadingCases && (
-        <Card className="border-border/50 animate-pulse">
+        <Card className="border-sky-500/20 bg-slate-950/60 backdrop-blur-md animate-pulse">
           <CardContent className="p-6 space-y-4">
-            <div className="h-4 bg-muted rounded w-1/3" />
-            <div className="h-8 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-slate-800 rounded w-1/3" />
+            <div className="h-8 bg-slate-800 rounded w-3/4" />
             <div className="space-y-2">
-              <div className="h-3 bg-muted rounded w-full" />
-              <div className="h-3 bg-muted rounded w-2/3" />
+              <div className="h-3 bg-slate-800 rounded w-full" />
+              <div className="h-3 bg-slate-800 rounded w-2/3" />
             </div>
           </CardContent>
         </Card>
@@ -310,189 +315,188 @@ export function ScanScreen({
       {/* SECTION 5: SELECTED CASE CARD */}
       {!loadingCases && !apiError && caseDetail && (
         <>
-          <Card className="border-primary/30 bg-gradient-to-b from-card to-card/80 shadow-md relative overflow-hidden">
+          <Card className="glass-panel border-sky-500/30 shadow-xl relative overflow-hidden">
+            <div className="tech-corner-tl" />
+            <div className="tech-corner-tr" />
 
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-semibold text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                {caseDetail.case_id}
-              </span>
-
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAlertModalOpen(true)}
-                  className={`h-6 text-[10px] px-2 gap-1 ${
-                    hasTriggeredAlert
-                      ? 'border-amber-500/50 text-amber-500 bg-amber-500/10 animate-pulse font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title="Configure Anomaly Threshold Alert"
-                >
-                  <BellRing className="h-3 w-3" />
-                  {hasTriggeredAlert ? 'EXCEEDED' : 'Alert'}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShareCaseLink}
-                  className="h-6 text-[10px] px-2 gap-1 text-muted-foreground hover:text-foreground"
-                  title="Copy Web ↔ Mobile Case Link"
-                >
-                  {copiedLink ? <Check className="h-3 w-3 text-emerald-500" /> : <Share2 className="h-3 w-3" />}
-                  {copiedLink ? 'Copied' : 'Share Link'}
-                </Button>
-
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                    caseDetail.status === 'active'
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  ● {caseDetail.status}
+            <CardHeader className="p-4 pb-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-extrabold text-sky-300 bg-sky-500/15 px-2.5 py-0.5 rounded border border-sky-400/30 uppercase tracking-widest shadow-[0_0_10px_rgba(56,189,248,0.2)]">
+                  CASE // {caseDetail.case_id}
                 </span>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAlertModalOpen(true)}
+                    className={`h-6 text-[10px] font-mono px-2 gap-1 border-sky-500/30 ${
+                      hasTriggeredAlert
+                        ? 'border-amber-500/50 text-amber-300 bg-amber-500/20 animate-pulse font-bold'
+                        : 'text-slate-300 hover:text-white hover:bg-sky-500/15'
+                    }`}
+                    title="Configure Anomaly Threshold Alert"
+                  >
+                    <BellRing className="h-3 w-3" />
+                    {hasTriggeredAlert ? 'EXCEEDED' : 'Alert'}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShareCaseLink}
+                    className="h-6 text-[10px] font-mono px-2 gap-1 border-sky-500/30 text-slate-300 hover:text-white hover:bg-sky-500/15"
+                    title="Copy Web ↔ Mobile Case Link"
+                  >
+                    {copiedLink ? <Check className="h-3 w-3 text-emerald-400" /> : <Share2 className="h-3 w-3 text-sky-400" />}
+                    {copiedLink ? 'Copied' : 'Share'}
+                  </Button>
+
+                  <span
+                    className={`text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                      caseDetail.status === 'active'
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(52,211,153,0.3)]'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    ● {caseDetail.status}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <CardTitle className="text-lg font-bold text-foreground capitalize mt-2 flex items-center gap-2">
-              {caseDetail.event_type}
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Observation Start: {new Date(caseDetail.observation_start).toLocaleDateString()}
-            </CardDescription>
-          </CardHeader>
+              <CardTitle className="text-lg font-extrabold text-white capitalize mt-2 flex items-center gap-2 font-mono tracking-tight">
+                {caseDetail.event_type}
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                <Calendar className="h-3 w-3 text-sky-400" />
+                Start: {new Date(caseDetail.observation_start).toLocaleDateString()}
+              </CardDescription>
+            </CardHeader>
 
-          <CardContent className="p-4 pt-2 space-y-4">
-            {/* GRID METRICS */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {/* NISAR CHANGE MEASUREMENT */}
-              <div className="bg-muted/30 border border-border/50 rounded-lg p-2.5 space-y-1">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  <Activity className="h-3 w-3 text-primary" />
-                  NISAR Change
-                </span>
+            <CardContent className="p-4 pt-2 space-y-4">
+              {/* GRID METRICS */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {/* NISAR CHANGE MEASUREMENT */}
+                <div className="bg-slate-950/70 border border-sky-500/20 rounded-xl p-3 space-y-1 shadow-inner relative">
+                  <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Activity className="h-3 w-3 text-sky-400" />
+                    NISAR Backscatter
+                  </span>
 
-                {primaryNisarMeasurement?.delta_backscatter != null ? (
-                  <p className="text-sm font-bold font-mono text-foreground">
-                    {primaryNisarMeasurement.delta_backscatter > 0 ? '+' : ''}
-                    {primaryNisarMeasurement.delta_backscatter.toFixed(2)} dB
-                  </p>
-                ) : (
-                  <p className="text-[11px] font-medium text-muted-foreground italic">
-                    Measurement unavailable
-                  </p>
+                  {primaryNisarMeasurement?.delta_backscatter != null ? (
+                    <p className="text-sm font-bold font-mono text-sky-300 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]">
+                      {primaryNisarMeasurement.delta_backscatter > 0 ? '+' : ''}
+                      {primaryNisarMeasurement.delta_backscatter.toFixed(2)} dB
+                    </p>
+                  ) : (
+                    <p className="text-[11px] font-mono text-slate-400 italic">
+                      Unavailable
+                    </p>
+                  )}
+                </div>
+
+                {/* DISTANCE FROM USER */}
+                <div className="bg-slate-950/70 border border-sky-500/20 rounded-xl p-3 space-y-1 shadow-inner relative">
+                  <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Compass className="h-3 w-3 text-sky-400" />
+                    Distance
+                  </span>
+
+                  {distanceToUser != null ? (
+                    <p className="text-sm font-bold font-mono text-slate-200">{distanceToUser} km</p>
+                  ) : (
+                    <p className="text-[11px] font-mono text-slate-400 italic">
+                      {locationStatus === 'granted' ? 'Centroid unknown' : 'GPS off'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* QUICK ACTIONS FOR FEEL & VERIFY */}
+              <div className="grid grid-cols-2 gap-2">
+                {onNavigateToFeel && (
+                  <Button
+                    variant="outline"
+                    onClick={onNavigateToFeel}
+                    className="h-9 text-xs font-mono font-bold gap-1.5 border-sky-500/40 text-sky-300 hover:bg-sky-500/20 hover:text-white shadow-sm"
+                  >
+                    <Activity className="h-3.5 w-3.5 text-sky-400" />
+                    FEEL Signal
+                  </Button>
+                )}
+
+                {onNavigateToVerify && (
+                  <Button
+                    variant="outline"
+                    onClick={onNavigateToVerify}
+                    className="h-9 text-xs font-mono font-bold gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20 hover:text-white shadow-sm"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    VERIFY Ground
+                  </Button>
                 )}
               </div>
 
-              {/* DISTANCE FROM USER */}
-              <div className="bg-muted/30 border border-border/50 rounded-lg p-2.5 space-y-1">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  <Compass className="h-3 w-3 text-primary" />
-                  Distance
-                </span>
-
-                {distanceToUser != null ? (
-                  <p className="text-sm font-bold font-mono text-foreground">{distanceToUser} km</p>
-                ) : (
-                  <p className="text-[11px] font-medium text-muted-foreground italic">
-                    {locationStatus === 'granted' ? 'Location centroid unknown' : 'GPS disabled'}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* QUICK ACTIONS FOR FEEL & VERIFY */}
-            <div className="grid grid-cols-2 gap-2">
-              {onNavigateToFeel && (
-                <Button
-                  variant="outline"
-                  onClick={onNavigateToFeel}
-                  className="h-9 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                  FEEL Signal
-                </Button>
+              {/* LOCATION COORDINATES */}
+              {selectedCentroid && (
+                <div className="text-xs flex items-center justify-between border-t border-sky-500/15 pt-2 text-slate-400 font-mono">
+                  <span className="flex items-center gap-1 text-[11px]">
+                    <MapPin className="h-3 w-3 text-sky-400" />
+                    AOI Centroid:
+                  </span>
+                  <span className="text-[11px] font-bold text-sky-300">
+                    {selectedCentroid.latitude.toFixed(4)}°, {selectedCentroid.longitude.toFixed(4)}°
+                  </span>
+                </div>
               )}
 
-              {onNavigateToVerify && (
-                <Button
-                  variant="outline"
-                  onClick={onNavigateToVerify}
-                  className="h-9 text-xs gap-1.5 border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  VERIFY Ground
-                </Button>
-              )}
+              {/* PRIMARY ACTION BUTTON */}
+              <Button
+                className="w-full h-10 text-xs font-mono font-bold uppercase tracking-wider gap-2 shadow-lg bg-sky-500 text-slate-950 hover:bg-sky-400 shadow-sky-500/20"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Open Full Investigation State
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* PHASE 4.4 MISSION CONTROL SCIENTIFIC UI */}
+          {selectedCaseId && (
+            <div className="space-y-6 pt-2">
+              {/* FEATURE 1: EVIDENCE / CONFIDENCE WALL */}
+              <EvidenceConfidenceWall caseId={selectedCaseId} />
+
+              {/* FEATURE 2: CHANGE LENSES */}
+              <ChangeLensesView caseDetail={caseDetail} />
+
+              {/* FEATURE 3: OPTICAL VS SAR SWIPE COMPARISON */}
+              <OpticalSarSwipeComparison
+                opticalUri={caseDetail?.field_observations?.[0]?.photo_reference || null}
+                sarUri={primaryNisarMeasurement?.raster_reference || null}
+              />
+
+              {/* FEATURE 4: EVENT TIMELINE */}
+              <EnhancedEventTimeline
+                timeline={timeline}
+                observationStart={caseDetail?.observation_start}
+                observationEnd={caseDetail?.observation_end}
+              />
             </div>
-
-            {/* LOCATION COORDINATES */}
-            {selectedCentroid && (
-              <div className="text-xs flex items-center justify-between border-t border-border/40 pt-2 text-muted-foreground">
-                <span className="flex items-center gap-1 text-[11px]">
-                  <MapPin className="h-3 w-3 text-primary" />
-                  AOI Centroid:
-                </span>
-                <span className="font-mono text-[11px] font-medium text-foreground">
-                  {selectedCentroid.latitude.toFixed(4)}°, {selectedCentroid.longitude.toFixed(4)}°
-                </span>
-              </div>
-            )}
-
-            {/* PRIMARY ACTION BUTTON */}
-            <Button
-              className="w-full h-10 text-xs font-bold uppercase tracking-wider gap-2 shadow-sm"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Open Full Investigation State
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* PHASE 4.4 MISSION CONTROL SCIENTIFIC UI */}
-        {selectedCaseId && (
-          <div className="space-y-6 pt-2">
-            {/* FEATURE 1: EVIDENCE / CONFIDENCE WALL */}
-            <EvidenceConfidenceWall caseId={selectedCaseId} />
-
-            {/* FEATURE 2: CHANGE LENSES */}
-            <ChangeLensesView caseDetail={caseDetail} />
-
-            {/* FEATURE 3: OPTICAL VS SAR SWIPE COMPARISON */}
-            <OpticalSarSwipeComparison
-              opticalUri={caseDetail?.field_observations?.[0]?.photo_reference || null}
-              sarUri={primaryNisarMeasurement?.raster_reference || null}
-            />
-
-            {/* FEATURE 4: EVENT TIMELINE */}
-            <EnhancedEventTimeline
-              timeline={timeline}
-              observationStart={caseDetail?.observation_start}
-              observationEnd={caseDetail?.observation_end}
-            />
-          </div>
-        )}
+          )}
         </>
       )}
 
-
       {/* SECTION 6: NO CASES EMPTY STATE */}
-
-
       {!loadingCases && !apiError && cases.length === 0 && (
-        <Card className="border-border/60 text-center">
-          <CardContent className="p-8 space-y-3">
-            <Radar className="h-10 w-10 text-muted-foreground mx-auto animate-pulse" />
+        <Card className="glass-panel border-sky-500/20 text-center p-8">
+          <CardContent className="p-4 space-y-3">
+            <Radar className="h-10 w-10 text-sky-400 mx-auto animate-pulse" />
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">No TRACE Investigation Nearby</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="text-sm font-bold font-mono text-slate-200 uppercase">No TRACE Investigation Nearby</h3>
+              <p className="text-xs text-slate-400 leading-normal">
                 No active satellite investigation cases found in the backend database.
               </p>
             </div>
@@ -502,15 +506,18 @@ export function ScanScreen({
 
       {/* SECTION 7: INVESTIGATION DETAIL MODAL / DRAWER */}
       {isModalOpen && caseDetail && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex flex-col justify-end sm:justify-center p-4">
-          <div className="bg-card border border-border rounded-xl max-w-md w-full mx-auto max-h-[85vh] flex flex-col shadow-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex flex-col justify-end sm:justify-center p-4">
+          <div className="glass-panel border-sky-500/30 rounded-2xl max-w-md w-full mx-auto max-h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
+            <div className="tech-corner-tl" />
+            <div className="tech-corner-tr" />
+
             {/* Modal Header */}
-            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+            <div className="p-4 border-b border-sky-500/20 flex items-center justify-between bg-slate-900/60">
               <div>
-                <span className="text-[10px] font-mono font-semibold text-primary uppercase">
-                  {caseDetail.case_id}
+                <span className="text-[10px] font-mono font-bold text-sky-300 uppercase tracking-widest bg-sky-500/15 px-2 py-0.5 rounded border border-sky-400/30">
+                  CASE // {caseDetail.case_id}
                 </span>
-                <h2 className="text-base font-bold text-foreground capitalize">
+                <h2 className="text-base font-extrabold text-white capitalize mt-1 font-mono">
                   {caseDetail.event_type} Investigation
                 </h2>
               </div>
@@ -518,7 +525,7 @@ export function ScanScreen({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="h-8 w-8 p-0 rounded-full"
+                className="h-8 w-8 p-0 rounded-full border-sky-500/30 text-sky-300 hover:bg-sky-500/20"
               >
                 <X className="h-4 w-4" />
               </Button>
