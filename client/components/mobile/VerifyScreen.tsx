@@ -26,6 +26,9 @@ import {
   type FieldObservationResponse,
 } from '@/lib/api';
 
+import { useOfflineSync } from '@/lib/useOfflineSync';
+import { Wifi, WifiOff, CloudOff } from 'lucide-react';
+
 interface VerifyScreenProps {
   initialCaseId?: string | null;
   onSuccess?: () => void;
@@ -33,6 +36,7 @@ interface VerifyScreenProps {
 
 export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
   const { location, status: locationStatus, error: locationError, requestLocation } = useGeolocation();
+  const { isOnline, pendingCount, isSyncing, enqueueAndSync, syncPendingQueue } = useOfflineSync();
 
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(initialCaseId || null);
   const [caseList, setCaseList] = useState<Array<{ case_id: string; event_type: string }>>([]);
@@ -44,6 +48,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<FieldObservationResponse | null>(null);
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -97,7 +102,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
     }
   };
 
-  // ONE-TAP RESPONSE SUBMISSION
+  // ONE-TAP RESPONSE SUBMISSION (OFFLINE-SAFE)
   const handleOneTapSubmit = async (answer: 'YES' | 'NO') => {
     if (!selectedCaseId) {
       setErrorMessage('Please select an active TRACE investigation case.');
@@ -110,6 +115,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
 
     setSubmitting(true);
     setErrorMessage(null);
+    setOfflineNotice(null);
 
     const noteText = answer === 'YES'
       ? 'One-tap ground truth: Change present in target area'
@@ -124,8 +130,14 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
         longitude: location.longitude,
       };
 
-      const res = await createFieldObservation(selectedCaseId, payload, photoFile);
-      setSubmitSuccess(res);
+      const { observation, pendingItem } = await enqueueAndSync(selectedCaseId, payload, photoFile);
+      
+      if (observation) {
+        setSubmitSuccess(observation);
+      } else {
+        setOfflineNotice('Observation saved locally offline. Will automatically sync when connection recovers.');
+      }
+
       setNote('');
       handleRemovePhoto();
 
@@ -133,13 +145,13 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
         onSuccess();
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to submit one-tap ground observation.');
+      setErrorMessage(err.message || 'Failed to capture ground observation.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // FULL FORM SUBMISSION
+  // FULL FORM SUBMISSION (OFFLINE-SAFE)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCaseId) {
@@ -154,6 +166,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
 
     setSubmitting(true);
     setErrorMessage(null);
+    setOfflineNotice(null);
 
     try {
       const payload = {
@@ -164,8 +177,14 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
         longitude: location.longitude,
       };
 
-      const res = await createFieldObservation(selectedCaseId, payload, photoFile);
-      setSubmitSuccess(res);
+      const { observation, pendingItem } = await enqueueAndSync(selectedCaseId, payload, photoFile);
+
+      if (observation) {
+        setSubmitSuccess(observation);
+      } else {
+        setOfflineNotice('Observation saved locally offline. Will automatically sync when connection recovers.');
+      }
+
       setNote('');
       handleRemovePhoto();
 
@@ -183,6 +202,38 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
 
   return (
     <div className="space-y-4 pb-20 max-w-md mx-auto px-4" role="region" aria-label="Ground Truth Closed-Loop System">
+      {/* OFFLINE QUEUE STATUS BANNER */}
+      {pendingCount > 0 && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+          <div className="flex items-center gap-2">
+            <CloudOff className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold">{pendingCount} observation{pendingCount > 1 ? 's' : ''} queued offline</span>
+              <p className="text-[10px] text-amber-400/80">
+                {isOnline ? (isSyncing ? 'Synchronizing with server...' : 'Ready to sync') : 'Waiting for network connection'}
+              </p>
+            </div>
+          </div>
+          {isOnline && !isSyncing && (
+            <Button
+              onClick={() => syncPendingQueue()}
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
+            >
+              Sync Now
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* OFFLINE LOCAL SAVED NOTICE */}
+      {offlineNotice && (
+        <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-xs text-sky-300 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+          <span>{offlineNotice}</span>
+        </div>
+      )}
       {/* SECTION 1: CASE PICKER */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">

@@ -575,6 +575,148 @@ export async function runSentinelAgents(caseId: string): Promise<SentinelWorkflo
   return res.json();
 }
 
+export interface GlobalEventItem {
+  case_id: string;
+  event_type: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  observation_start: string;
+  observation_end: string;
+  status: string;
+  evidence_status: string;
+  audit_verdict: string;
+  ground_truth_count: number;
+  provenance_count: number;
+  created_at: string;
+}
+
+export interface GlobalEventsResponse {
+  items: GlobalEventItem[];
+  total: number;
+}
+
+/**
+ * Fetch planetary global events for Phase 5.1 Global Pulse
+ */
+export async function fetchGlobalEvents(eventType?: string, auditVerdict?: string): Promise<GlobalEventsResponse> {
+  const params = new URLSearchParams();
+  if (eventType) params.append('event_type', eventType);
+  if (auditVerdict) params.append('audit_verdict', auditVerdict);
+
+  const url = getApiUrl(`/api/global/events?${params.toString()}`);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} failed to fetch global pulse events`);
+  }
+
+  return res.json();
+}
+
+export interface GroundTruthAggregation {
+  total_reports: number;
+  confirmed_reports: number;
+  denied_reports: number;
+  pending_reports: number;
+}
+
+export interface CharHistoryResponse {
+  case_id: string;
+  event_type: string;
+  char_name_or_id: string;
+  geometry?: GeoJSONGeometry | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  observation_start: string;
+  observation_end: string;
+  status: string;
+  change_status: string;
+  latest_delta_backscatter?: number | null;
+  latest_affected_area?: number | null;
+  evidence_status: string;
+  audit_verdict: string;
+  ground_truth: GroundTruthAggregation;
+  historical_observations: TimelineEventItem[];
+  provenance_records: ProvenanceResponse[];
+  alerts: ThresholdAlertResponse[];
+}
+
+/**
+ * Fetch river-island / char change history for Phase 5.1 Char Guardian
+ */
+export async function fetchCharHistory(caseId: string): Promise<CharHistoryResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/char-history`);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} failed to fetch char guardian history`);
+  }
+
+  return res.json();
+}
+
+export interface CommunityReportsResponse {
+  case_id: string;
+  aggregation: GroundTruthAggregation;
+  reports: FieldObservationResponse[];
+  message: string;
+}
+
+/**
+ * Fetch structured community sentinel reports for a case
+ */
+export async function fetchCommunityReports(caseId: string): Promise<CommunityReportsResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/community-reports`);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} failed to fetch community reports`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Acknowledge a threshold alert state (UNREAD -> READ / ACKNOWLEDGED)
+ */
+export async function acknowledgeAlert(caseId: string, alertId: string, acknowledgementStatus: string = 'ACKNOWLEDGED'): Promise<ThresholdAlertResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/alerts/${encodeURIComponent(alertId)}/acknowledge`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ acknowledgement_status: acknowledgementStatus }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} failed to acknowledge alert`);
+  }
+
+  return res.json();
+}
+
+
+
 
 
 

@@ -152,15 +152,20 @@ class Provenance(Base):
 class FieldObservation(Base):
     """
     Ground-truth field observation collected at specific spatial Point coordinates.
+    Extended for Phase 5.2 Community Sentinel Network reports.
     """
     __tablename__ = "field_observations"
 
     id = Column(String, primary_key=True, default=generate_uuid)
     case_id = Column(String, ForeignKey("cases.case_id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, nullable=True)
     photo_reference = Column(String, nullable=True)
     note = Column(String, nullable=True)
     observed_at = Column(DateTime(timezone=True), nullable=False)
-    location = Column(Geometry(geometry_type="POINT", srid=4326, spatial_index=False), nullable=False)
+    location = Column(Geometry(geometry_type="POINT", srid=4326, spatial_index=False), nullable=True)
+    source_type = Column(String, nullable=False, default="community_sentinel")
+    verification_state = Column(String, nullable=False, default="PENDING")  # PENDING | USER_CONFIRMED | CROSS_CHECKED | SUPPORTED | REJECTED
+    sentinel_tier = Column(String, nullable=False, default="ACTIVE_REPORTER")  # NEW_REPORTER | ACTIVE_REPORTER | VERIFIED_CONTRIBUTOR
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationship
@@ -170,16 +175,21 @@ class FieldObservation(Base):
 class ThresholdAlert(Base):
     """
     User threshold subscription for anomaly alerts on real NISAR measurements.
+    Extended for Phase 5.2 Field Companion Alert Layer.
     """
     __tablename__ = "threshold_alerts"
 
     id = Column(String, primary_key=True, default=generate_uuid)
     case_id = Column(String, ForeignKey("cases.case_id", ondelete="CASCADE"), nullable=False, index=True)
+    evidence_id = Column(String, ForeignKey("evidence.id", ondelete="SET NULL"), nullable=True, index=True)
     metric_name = Column(String, nullable=False, default="delta_backscatter")  # delta_backscatter | affected_area
     threshold_value = Column(Float, nullable=False, default=-2.0)
     comparison = Column(String, nullable=False, default="less_than")  # less_than | greater_than | abs_greater_than
     is_active = Column(Boolean, nullable=False, default=True)
     triggered_state = Column(String, nullable=False, default="ARMED")  # ARMED | TRIGGERED
+    alert_state = Column(String, nullable=False, default="UNAVAILABLE")  # OBSERVED CHANGE | POTENTIAL CHANGE | INCONCLUSIVE | REJECTED | UNAVAILABLE
+    acknowledgement_status = Column(String, nullable=False, default="UNREAD")  # UNREAD | READ | ACKNOWLEDGED
+    safe_message = Column(String, nullable=True)
     last_evaluated_val = Column(Float, nullable=True)
     last_triggered_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -187,3 +197,4 @@ class ThresholdAlert(Base):
 
     # Relationship
     case = relationship("Case", back_populates="threshold_alerts")
+

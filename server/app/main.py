@@ -66,6 +66,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include Routers
 app.include_router(health.router)
 app.include_router(cases.router, prefix="/api")
+app.include_router(cases.global_router, prefix="/api")
 app.include_router(nasa.router, prefix="/api")
 
 # Mount Static Uploads for local fallback storage

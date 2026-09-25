@@ -8,12 +8,19 @@ import { MobileNav, type MobileTab } from '@/components/mobile/MobileNav';
 import { ScanScreen } from '@/components/mobile/ScanScreen';
 import { FeelScreen } from '@/components/mobile/FeelScreen';
 import { VerifyScreen } from '@/components/mobile/VerifyScreen';
+import { GlobalPulseView } from '@/components/scientific/GlobalPulseView';
+import { CharGuardianView } from '@/components/scientific/CharGuardianView';
 
 export default function HomePage() {
   const { status: locationStatus } = useGeolocation();
   const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
   const [activeTab, setActiveTab] = useState<MobileTab>('scan');
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
+
+  const handleSelectCaseFromPulse = (caseId: string) => {
+    setCurrentCaseId(caseId);
+    setActiveTab('scan');
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -44,7 +51,19 @@ export default function HomePage() {
       <main className="flex-1 pt-4 pb-20">
         {activeTab === 'scan' && (
           <ScanScreen
+            overrideCaseId={currentCaseId}
             onNavigateToFeel={() => setActiveTab('feel')}
+            onNavigateToVerify={() => setActiveTab('verify')}
+          />
+        )}
+
+        {activeTab === 'pulse' && (
+          <GlobalPulseView onSelectCase={handleSelectCaseFromPulse} />
+        )}
+
+        {activeTab === 'char' && (
+          <CharGuardianView
+            initialCaseId={currentCaseId}
             onNavigateToVerify={() => setActiveTab('verify')}
           />
         )}

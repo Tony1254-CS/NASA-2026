@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.repositories.case_repository import CaseRepository
-from app.utils.geo import shape_to_geojson
+from app.utils.geo import shape_to_geojson, extract_centroid
 from app.schemas.case import (
     CaseListItem,
     PaginatedCasesResponse,
@@ -20,6 +20,10 @@ from app.schemas.case import (
     ThresholdAlertCreate,
     ThresholdAlertUpdate,
     ThresholdAlertResponse,
+    GlobalEventItem,
+    GlobalEventsResponse,
+    GroundTruthAggregation,
+    CharHistoryResponse,
 )
 
 
@@ -363,6 +367,8 @@ class CaseService:
             observed_at=payload.observed_at,
             latitude=payload.latitude,
             longitude=payload.longitude,
+            source_type=payload.source_type or "human_observation",
+            user_id=payload.user_id or "community_sentinel_anon",
         )
         if not obs:
             raise HTTPException(
@@ -380,12 +386,15 @@ class CaseService:
         return FieldObservationResponse(
             id=obs.id,
             case_id=obs.case_id,
+            user_id=getattr(obs, "user_id", "community_sentinel_anon") or "community_sentinel_anon",
             photo_reference=obs.photo_reference,
             note=obs.note,
             observed_at=obs.observed_at,
             location=shape_to_geojson(obs.location),
             source_type=getattr(obs, "source_type", "human_observation") or "human_observation",
-            source="HUMAN_OBSERVATION",
+            source="HUMAN_OBSERVATION" if (getattr(obs, "source_type", "") == "human_observation") else "COMMUNITY_OBSERVATION",
+            verification_state=getattr(obs, "verification_state", "PENDING") or "PENDING",
+            sentinel_tier=getattr(obs, "sentinel_tier", "ACTIVE_REPORTER") or "ACTIVE_REPORTER",
             created_at=obs.created_at,
         )
 
@@ -399,6 +408,16 @@ class CaseService:
         latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
         if not latest_nisar:
             return
+
+        linked_evidence = None
+        if case.evidence:
+            for ev in case.evidence:
+                if ev.source_type in ["NISAR", "SAR"] or getattr(ev, "evidence_type", None) == "sar_detection":
+                    linked_evidence = ev
+                    break
+
+        latest_audit = case.challenge_checks[0] if case.challenge_checks else None
+        audit_verdict = getattr(latest_audit, "verdict", getattr(latest_audit, "value", "UNAVAILABLE")) or "UNAVAILABLE"
 
         now = datetime.now(timezone.utc)
         for alert in case.threshold_alerts:
@@ -423,34 +442,41 @@ class CaseService:
                 crossed = abs(val) >= abs(alert.threshold_value)
 
             if crossed:
-                if alert.triggered_state != "TRIGGERED":
-                    CaseRepository.update_alert(
-                        db,
-                        alert.id,
-                        triggered_state="TRIGGERED",
-                        last_evaluated_val=val,
-                        last_triggered_at=now,
-                    )
+                if audit_verdict == "SUPPORTED":
+                    derived_alert_state = "OBSERVED CHANGE"
+                    safe_msg = f"TRACE detected an observed change near your selected location (metric: {alert.metric_name} = {val})."
+                elif audit_verdict == "INCONCLUSIVE":
+                    derived_alert_state = "INCONCLUSIVE"
+                    safe_msg = f"TRACE detected a potential change (metric: {alert.metric_name} = {val}). Evidence is currently inconclusive."
+                elif audit_verdict == "REJECTED":
+                    derived_alert_state = "REJECTED"
+                    safe_msg = f"Potential anomaly detected (metric: {alert.metric_name} = {val}), but scientific audit rejected the finding."
                 else:
-                    CaseRepository.update_alert(
-                        db,
-                        alert.id,
-                        last_evaluated_val=val,
-                    )
+                    derived_alert_state = "POTENTIAL CHANGE"
+                    safe_msg = f"TRACE detected a potential change (metric: {alert.metric_name} = {val})."
+
+                CaseRepository.update_alert(
+                    db,
+                    alert.id,
+                    triggered_state="TRIGGERED",
+                    alert_state=derived_alert_state,
+                    safe_message=safe_msg,
+                    evidence_id=linked_evidence.id if linked_evidence else alert.evidence_id,
+                    last_evaluated_val=val,
+                    last_triggered_at=now if alert.triggered_state != "TRIGGERED" else alert.last_triggered_at,
+                )
             else:
-                if alert.triggered_state == "TRIGGERED":
-                    CaseRepository.update_alert(
-                        db,
-                        alert.id,
-                        triggered_state="ARMED",
-                        last_evaluated_val=val,
-                    )
-                else:
-                    CaseRepository.update_alert(
-                        db,
-                        alert.id,
-                        last_evaluated_val=val,
-                    )
+                derived_alert_state = "UNAVAILABLE" if audit_verdict == "UNAVAILABLE" else "INCONCLUSIVE"
+                safe_msg = f"No threshold crossing detected for {alert.metric_name} (value: {val})."
+                CaseRepository.update_alert(
+                    db,
+                    alert.id,
+                    triggered_state="ARMED",
+                    alert_state=derived_alert_state,
+                    safe_message=safe_msg,
+                    evidence_id=linked_evidence.id if linked_evidence else alert.evidence_id,
+                    last_evaluated_val=val,
+                )
 
     @staticmethod
     def get_alerts_for_case(db: Session, case_id: str) -> List[ThresholdAlertResponse]:
@@ -465,11 +491,15 @@ class CaseService:
             ThresholdAlertResponse(
                 id=a.id,
                 case_id=a.case_id,
+                evidence_id=a.evidence_id,
                 metric_name=a.metric_name,
                 threshold_value=a.threshold_value,
                 comparison=a.comparison,
                 is_active=a.is_active,
                 triggered_state=a.triggered_state,
+                alert_state=getattr(a, "alert_state", "UNAVAILABLE") or "UNAVAILABLE",
+                acknowledgement_status=getattr(a, "acknowledgement_status", "UNREAD") or "UNREAD",
+                safe_message=getattr(a, "safe_message", None),
                 last_evaluated_val=a.last_evaluated_val,
                 last_triggered_at=a.last_triggered_at,
                 created_at=a.created_at,
@@ -497,18 +527,21 @@ class CaseService:
             )
 
         CaseService.evaluate_alerts_for_case(db, case_id)
-        # Fetch fresh alert state
         alerts = CaseRepository.get_alerts_for_case(db, case_id)
         saved = next((a for a in (alerts or []) if a.id == alert.id), alert)
 
         return ThresholdAlertResponse(
             id=saved.id,
             case_id=saved.case_id,
+            evidence_id=saved.evidence_id,
             metric_name=saved.metric_name,
             threshold_value=saved.threshold_value,
             comparison=saved.comparison,
             is_active=saved.is_active,
             triggered_state=saved.triggered_state,
+            alert_state=getattr(saved, "alert_state", "UNAVAILABLE") or "UNAVAILABLE",
+            acknowledgement_status=getattr(saved, "acknowledgement_status", "UNREAD") or "UNREAD",
+            safe_message=getattr(saved, "safe_message", None),
             last_evaluated_val=saved.last_evaluated_val,
             last_triggered_at=saved.last_triggered_at,
             created_at=saved.created_at,
@@ -527,6 +560,7 @@ class CaseService:
             comparison=payload.comparison,
             is_active=payload.is_active,
             triggered_state=payload.triggered_state,
+            acknowledgement_status=payload.acknowledgement_status,
         )
         if not alert:
             raise HTTPException(
@@ -541,16 +575,93 @@ class CaseService:
         return ThresholdAlertResponse(
             id=saved.id,
             case_id=saved.case_id,
+            evidence_id=saved.evidence_id,
             metric_name=saved.metric_name,
             threshold_value=saved.threshold_value,
             comparison=saved.comparison,
             is_active=saved.is_active,
             triggered_state=saved.triggered_state,
+            alert_state=getattr(saved, "alert_state", "UNAVAILABLE") or "UNAVAILABLE",
+            acknowledgement_status=getattr(saved, "acknowledgement_status", "UNREAD") or "UNREAD",
+            safe_message=getattr(saved, "safe_message", None),
             last_evaluated_val=saved.last_evaluated_val,
             last_triggered_at=saved.last_triggered_at,
             created_at=saved.created_at,
             updated_at=saved.updated_at,
         )
+
+    @staticmethod
+    def acknowledge_alert(db: Session, case_id: str, alert_id: str, status_val: str = "ACKNOWLEDGED") -> ThresholdAlertResponse:
+        alert = CaseRepository.get_alert_by_id(db, alert_id)
+        if not alert or alert.case_id != case_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Alert '{alert_id}' for case '{case_id}' not found",
+            )
+        updated = CaseRepository.update_alert(db, alert_id, acknowledgement_status=status_val)
+        return ThresholdAlertResponse(
+            id=updated.id,
+            case_id=updated.case_id,
+            evidence_id=updated.evidence_id,
+            metric_name=updated.metric_name,
+            threshold_value=updated.threshold_value,
+            comparison=updated.comparison,
+            is_active=updated.is_active,
+            triggered_state=updated.triggered_state,
+            alert_state=getattr(updated, "alert_state", "UNAVAILABLE") or "UNAVAILABLE",
+            acknowledgement_status=getattr(updated, "acknowledgement_status", "UNREAD") or "UNREAD",
+            safe_message=getattr(updated, "safe_message", None),
+            last_evaluated_val=updated.last_evaluated_val,
+            last_triggered_at=updated.last_triggered_at,
+            created_at=updated.created_at,
+            updated_at=updated.updated_at,
+        )
+
+    @staticmethod
+    def get_community_reports(db: Session, case_id: str):
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+        obs_list = case.field_observations or []
+        total = len(obs_list)
+        confirmed = sum(1 for o in obs_list if getattr(o, "verification_state", None) in ["USER_CONFIRMED", "CROSS_CHECKED", "SUPPORTED"])
+        denied = sum(1 for o in obs_list if getattr(o, "verification_state", None) == "REJECTED")
+        pending = sum(1 for o in obs_list if getattr(o, "verification_state", None) == "PENDING" or getattr(o, "verification_state", None) is None)
+
+        aggregation = GroundTruthAggregation(
+            total_reports=total,
+            confirmed_reports=confirmed,
+            denied_reports=denied,
+            pending_reports=pending,
+        )
+
+        formatted_reports = [
+            FieldObservationResponse(
+                id=o.id,
+                case_id=o.case_id,
+                user_id=getattr(o, "user_id", "community_sentinel_anon") or "community_sentinel_anon",
+                photo_reference=o.photo_reference,
+                note=o.note,
+                observed_at=o.observed_at,
+                location=shape_to_geojson(o.location),
+                source_type=getattr(o, "source_type", "community_sentinel") or "community_sentinel",
+                source="COMMUNITY_OBSERVATION",
+                verification_state=getattr(o, "verification_state", "PENDING") or "PENDING",
+                sentinel_tier=getattr(o, "sentinel_tier", "ACTIVE_REPORTER") or "ACTIVE_REPORTER",
+                created_at=o.created_at,
+            )
+            for o in obs_list
+        ]
+
+        return {
+            "case_id": case_id,
+            "aggregation": aggregation,
+            "reports": formatted_reports,
+            "message": "No community reports yet." if total == 0 else f"{total} community reports found."
+        }
 
     @staticmethod
     def evaluate_evidence_fusion(db: Session, case_id: str):
@@ -855,6 +966,210 @@ class CaseService:
         )
 
         return result.model_dump()
+
+    @staticmethod
+    def get_global_events(
+        db: Session,
+        event_type: Optional[str] = None,
+        audit_verdict: Optional[str] = None,
+    ) -> GlobalEventsResponse:
+        """
+        Executes Phase 5.1 Global Pulse planetary case aggregator using REAL database cases.
+        Returns mapped spatial coordinates, evidence fusion status, self-audit verdicts, and provenance counts.
+        """
+        all_cases = []
+        page_idx = 1
+        page_limit = 100
+        while True:
+            batch, db_total = CaseRepository.get_cases(db, page=page_idx, page_size=page_limit)
+            if not batch:
+                break
+            all_cases.extend(batch)
+            if len(all_cases) >= db_total or len(batch) < page_limit:
+                break
+            page_idx += 1
+
+        global_items: List[GlobalEventItem] = []
+        for c in all_cases:
+            if event_type and event_type.strip().lower() not in c.event_type.lower():
+                continue
+
+            lat, lon = extract_centroid(c.geometry)
+
+            # Determine self-audit verdict
+            audit_state = "UNAVAILABLE"
+            if c.challenge_checks:
+                for cc in c.challenge_checks:
+                    if cc.check_type in {"OVERALL_SELF_AUDIT", "DETERMINISTIC_SELF_AUDIT"}:
+                        audit_state = cc.status.upper()
+                        break
+                if audit_state == "UNAVAILABLE" and len(c.challenge_checks) > 0:
+                    has_fail = any(cc.status.upper() in {"FAIL", "REJECTED"} for cc in c.challenge_checks)
+                    has_pass = any(cc.status.upper() in {"PASS", "SUPPORTED"} for cc in c.challenge_checks)
+                    audit_state = "REJECTED" if has_fail else ("SUPPORTED" if has_pass else "INCONCLUSIVE")
+
+            # Determine evidence fusion status
+            evidence_state = "UNAVAILABLE"
+            if c.evidence:
+                has_supp = any(e.status.upper() in {"SUPPORTING", "SUPPORTS", "CONFIRMED_MULTIMISSION"} for e in c.evidence)
+                has_contra = any(e.status.upper() in {"CONTRADICTORY", "CONTRADICTS"} for e in c.evidence)
+                evidence_state = "CONTRADICTED" if has_contra else ("SUPPORTED" if has_supp else "INCONCLUSIVE")
+
+            if audit_verdict and audit_verdict.strip().upper() != audit_state:
+                continue
+
+            gt_count = len(c.field_observations) if c.field_observations else 0
+            prov_count = len(c.provenance_records) if c.provenance_records else 0
+
+            global_items.append(
+                GlobalEventItem(
+                    case_id=c.case_id,
+                    event_type=c.event_type,
+                    latitude=lat,
+                    longitude=lon,
+                    observation_start=c.observation_start,
+                    observation_end=c.observation_end,
+                    status=c.status,
+                    evidence_status=evidence_state,
+                    audit_verdict=audit_state,
+                    ground_truth_count=gt_count,
+                    provenance_count=prov_count,
+                    created_at=c.created_at,
+                )
+            )
+
+        return GlobalEventsResponse(items=global_items, total=len(global_items))
+
+    @staticmethod
+    def get_char_history(db: Session, case_id: str) -> CharHistoryResponse:
+        """
+        Executes Phase 5.1 Char Guardian river-island / char change inspection for a target case.
+        Structures historical observations, ground truth report aggregations, threshold alerts, and provenance lineage.
+        Enforces scientifically safe phrasing ('OBSERVED CHANGE' / 'Observed SAR change') without unverified erosion claims.
+        """
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+
+        lat, lon = extract_centroid(case.geometry)
+        geom_dict = shape_to_geojson(case.geometry)
+
+        latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
+        delta_b = latest_nisar.delta_backscatter if latest_nisar else None
+        area_val = latest_nisar.affected_area if latest_nisar else None
+
+        # Scientifically safe change status (NO unsupported erosion claims)
+        if delta_b is not None and delta_b <= -1.5:
+            change_status = "OBSERVED CHANGE"
+        elif delta_b is not None:
+            change_status = "POTENTIAL CHANGE"
+        elif case.evidence or case.challenge_checks:
+            change_status = "INCONCLUSIVE"
+        else:
+            change_status = "UNAVAILABLE"
+
+        audit_state = "UNAVAILABLE"
+        if case.challenge_checks:
+            for cc in case.challenge_checks:
+                if cc.check_type in {"OVERALL_SELF_AUDIT", "DETERMINISTIC_SELF_AUDIT"}:
+                    audit_state = cc.status.upper()
+                    break
+            if audit_state == "UNAVAILABLE" and len(case.challenge_checks) > 0:
+                has_fail = any(cc.status.upper() in {"FAIL", "REJECTED"} for cc in case.challenge_checks)
+                has_pass = any(cc.status.upper() in {"PASS", "SUPPORTED"} for cc in case.challenge_checks)
+                audit_state = "REJECTED" if has_fail else ("SUPPORTED" if has_pass else "INCONCLUSIVE")
+
+        evidence_state = "UNAVAILABLE"
+        if case.evidence:
+            has_supp = any(e.status.upper() in {"SUPPORTING", "SUPPORTS", "CONFIRMED_MULTIMISSION"} for e in case.evidence)
+            has_contra = any(e.status.upper() in {"CONTRADICTORY", "CONTRADICTS"} for e in case.evidence)
+            evidence_state = "CONTRADICTED" if has_contra else ("SUPPORTED" if has_supp else "INCONCLUSIVE")
+
+        # Ground truth report aggregation based on structured verification_state
+        tot_obs = len(case.field_observations) if case.field_observations else 0
+        conf_obs = 0
+        den_obs = 0
+        pend_obs = 0
+        for fo in (case.field_observations or []):
+            v_state = (getattr(fo, "verification_state", None) or "").upper()
+            if v_state in {"USER_CONFIRMED", "CROSS_CHECKED", "SUPPORTED"}:
+                conf_obs += 1
+            elif v_state in {"REJECTED", "DENIED"}:
+                den_obs += 1
+            else:
+                pend_obs += 1
+
+        gt_agg = GroundTruthAggregation(
+            total_reports=tot_obs,
+            confirmed_reports=conf_obs,
+            denied_reports=den_obs,
+            pending_reports=pend_obs,
+        )
+
+        timeline_res = CaseService.get_timeline(db, case_id)
+
+        prov_res = [
+            ProvenanceResponse(
+                id=p.id,
+                case_id=p.case_id,
+                evidence_id=p.evidence_id,
+                collection_id=p.collection_id,
+                granule_id=p.granule_id,
+                product_id=p.product_id,
+                acquisition_time=p.acquisition_time,
+                processing_method=p.processing_method,
+                calculation_method=p.calculation_method,
+                source_reference=p.source_reference,
+                created_at=p.created_at,
+            )
+            for p in case.provenance_records
+        ]
+
+        alert_res = [
+            ThresholdAlertResponse(
+                id=ta.id,
+                case_id=ta.case_id,
+                evidence_id=ta.evidence_id,
+                metric_name=ta.metric_name,
+                threshold_value=ta.threshold_value,
+                comparison=ta.comparison,
+                is_active=ta.is_active,
+                triggered_state=ta.triggered_state,
+                alert_state=getattr(ta, "alert_state", "UNAVAILABLE") or "UNAVAILABLE",
+                acknowledgement_status=getattr(ta, "acknowledgement_status", "UNREAD") or "UNREAD",
+                safe_message=getattr(ta, "safe_message", None),
+                last_evaluated_val=ta.last_evaluated_val,
+                last_triggered_at=ta.last_triggered_at,
+                created_at=ta.created_at,
+                updated_at=ta.updated_at,
+            )
+            for ta in case.threshold_alerts
+        ]
+
+        return CharHistoryResponse(
+            case_id=case.case_id,
+            event_type=case.event_type,
+            char_name_or_id=f"AOI-{case.case_id}",
+            geometry=geom_dict,
+            latitude=lat,
+            longitude=lon,
+            observation_start=case.observation_start,
+            observation_end=case.observation_end,
+            status=case.status,
+            change_status=change_status,
+            latest_delta_backscatter=delta_b,
+            latest_affected_area=area_val,
+            evidence_status=evidence_state,
+            audit_verdict=audit_state,
+            ground_truth=gt_agg,
+            historical_observations=timeline_res.events,
+            provenance_records=prov_res,
+            alerts=alert_res,
+        )
+
 
 
 

@@ -1,5 +1,5 @@
 from typing import List, Tuple, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
 from geoalchemy2.elements import WKTElement
@@ -83,21 +83,44 @@ class CaseRepository:
         photo_reference: Optional[str],
         note: Optional[str],
         observed_at: datetime,
-        latitude: float,
-        longitude: float,
-        source_type: str = "human_observation",
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        source_type: str = "community_sentinel",
+        user_id: Optional[str] = "community_sentinel_anon",
+        verification_state: str = "PENDING",
+        sentinel_tier: str = "ACTIVE_REPORTER",
     ) -> Optional[FieldObservation]:
         case_exists = db.scalar(select(Case.id).where(Case.case_id == case_id))
         if not case_exists:
             return None
 
-        wkt_location = f"POINT({longitude} {latitude})"
+        # Idempotency check: prevent duplicate observation records if client retries after network drop
+        stmt = select(FieldObservation).where(
+            FieldObservation.case_id == case_id,
+            FieldObservation.user_id == user_id,
+            FieldObservation.note == note,
+        )
+        existing_list = db.scalars(stmt).all()
+        for existing in existing_list:
+            if existing.observed_at and observed_at:
+                t1 = existing.observed_at.astimezone(timezone.utc).replace(tzinfo=None) if existing.observed_at.tzinfo else existing.observed_at
+                t2 = observed_at.astimezone(timezone.utc).replace(tzinfo=None) if observed_at.tzinfo else observed_at
+                if abs((t1 - t2).total_seconds()) < 5.0:
+                    return existing
+
+        wkt_loc = f"POINT({longitude} {latitude})" if (latitude is not None and longitude is not None) else None
+        loc_element = WKTElement(wkt_loc, srid=4326) if wkt_loc else None
+
         field_obs = FieldObservation(
             case_id=case_id,
+            user_id=user_id,
             photo_reference=photo_reference,
             note=note,
             observed_at=observed_at,
-            location=WKTElement(wkt_location, srid=4326),
+            location=loc_element,
+            source_type=source_type,
+            verification_state=verification_state,
+            sentinel_tier=sentinel_tier,
         )
         db.add(field_obs)
         db.flush()
@@ -106,11 +129,11 @@ class CaseRepository:
         ev = Evidence(
             case_id=case_id,
             source_type=source_type,
-            collection_id="GROUND_FIELD_OBSERVATION",
+            collection_id="COMMUNITY_SENTINEL_REPORT",
             granule_id=field_obs.id,
             time_start=observed_at,
             time_end=observed_at,
-            role="ground_truth",
+            role="ground_truth_community",
             status="evaluated",
             visualization_uri=photo_reference,
         )
@@ -174,6 +197,11 @@ class CaseRepository:
             return alert
 
     @staticmethod
+    def get_alert_by_id(db: Session, alert_id: str) -> Optional[ThresholdAlert]:
+        stmt = select(ThresholdAlert).where(ThresholdAlert.id == alert_id)
+        return db.scalars(stmt).first()
+
+    @staticmethod
     def update_alert(
         db: Session,
         alert_id: str,
@@ -182,6 +210,10 @@ class CaseRepository:
         comparison: Optional[str] = None,
         is_active: Optional[bool] = None,
         triggered_state: Optional[str] = None,
+        alert_state: Optional[str] = None,
+        acknowledgement_status: Optional[str] = None,
+        safe_message: Optional[str] = None,
+        evidence_id: Optional[str] = None,
         last_evaluated_val: Optional[float] = None,
         last_triggered_at: Optional[datetime] = None,
     ) -> Optional[ThresholdAlert]:
@@ -200,6 +232,14 @@ class CaseRepository:
             alert.is_active = is_active
         if triggered_state is not None:
             alert.triggered_state = triggered_state
+        if alert_state is not None:
+            alert.alert_state = alert_state
+        if acknowledgement_status is not None:
+            alert.acknowledgement_status = acknowledgement_status
+        if safe_message is not None:
+            alert.safe_message = safe_message
+        if evidence_id is not None:
+            alert.evidence_id = evidence_id
         if last_evaluated_val is not None:
             alert.last_evaluated_val = last_evaluated_val
         if last_triggered_at is not None:

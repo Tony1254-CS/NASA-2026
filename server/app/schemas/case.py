@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class GeoJSONGeometry(BaseModel):
@@ -103,12 +103,13 @@ class ProvenanceResponse(BaseModel):
 
 
 class FieldObservationCreate(BaseModel):
+    user_id: Optional[str] = "community_sentinel_anon"
     photo_reference: Optional[str] = None
     note: Optional[str] = None
     observed_at: datetime
-    latitude: float = Field(ge=-90, le=90)
-    longitude: float = Field(ge=-180, le=180)
-    source_type: Optional[str] = "human_observation"
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    source_type: Optional[str] = "community_sentinel"
 
 
 class FieldObservationResponse(BaseModel):
@@ -116,12 +117,15 @@ class FieldObservationResponse(BaseModel):
 
     id: str
     case_id: str
+    user_id: Optional[str] = None
     photo_reference: Optional[str] = None
     note: Optional[str] = None
     observed_at: datetime
     location: Optional[GeoJSONGeometry] = None
-    source_type: str = "human_observation"
-    source: str = "HUMAN_OBSERVATION"
+    source_type: str = "community_sentinel"
+    source: str = "COMMUNITY_OBSERVATION"
+    verification_state: str = "PENDING"  # PENDING | USER_CONFIRMED | CROSS_CHECKED | SUPPORTED | REJECTED
+    sentinel_tier: str = "ACTIVE_REPORTER"  # NEW_REPORTER | ACTIVE_REPORTER | VERIFIED_CONTRIBUTOR
     created_at: datetime
 
 
@@ -154,6 +158,30 @@ class ThresholdAlertUpdate(BaseModel):
     comparison: Optional[str] = None
     is_active: Optional[bool] = None
     triggered_state: Optional[str] = None
+    acknowledgement_status: Optional[str] = None
+
+
+class AlertAcknowledgePayload(BaseModel):
+    acknowledgement_status: Optional[str] = None
+    status: Optional[str] = None
+
+    @field_validator("status", "acknowledgement_status", mode="before")
+    @classmethod
+    def validate_status_fields(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_upper = str(v).upper()
+        if v_upper not in {"UNREAD", "READ", "ACKNOWLEDGED"}:
+            raise ValueError("Invalid acknowledgement status. Must be UNREAD, READ, or ACKNOWLEDGED.")
+        return v_upper
+
+    def get_status(self) -> str:
+        val = self.acknowledgement_status or self.status or "ACKNOWLEDGED"
+        val_upper = str(val).upper()
+        if val_upper not in {"UNREAD", "READ", "ACKNOWLEDGED"}:
+            raise ValueError("Invalid acknowledgement status. Must be UNREAD, READ, or ACKNOWLEDGED.")
+        return val_upper
+
 
 
 class ThresholdAlertResponse(BaseModel):
@@ -161,15 +189,20 @@ class ThresholdAlertResponse(BaseModel):
 
     id: str
     case_id: str
+    evidence_id: Optional[str] = None
     metric_name: str
     threshold_value: float
     comparison: str
     is_active: bool
     triggered_state: str
+    alert_state: str = "UNAVAILABLE"  # OBSERVED CHANGE | POTENTIAL CHANGE | INCONCLUSIVE | REJECTED | UNAVAILABLE
+    acknowledgement_status: str = "UNREAD"  # UNREAD | READ | ACKNOWLEDGED
+    safe_message: Optional[str] = None
     last_evaluated_val: Optional[float] = None
     last_triggered_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+
 
 
 class CaseDetailResponse(BaseModel):
@@ -191,3 +224,52 @@ class CaseDetailResponse(BaseModel):
     provenance_records: List[ProvenanceResponse] = []
     field_observations: List[FieldObservationResponse] = []
     threshold_alerts: List[ThresholdAlertResponse] = []
+
+
+class GlobalEventItem(BaseModel):
+    case_id: str
+    event_type: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    observation_start: datetime
+    observation_end: datetime
+    status: str
+    evidence_status: str  # "SUPPORTED" | "INCONCLUSIVE" | "REJECTED" | "UNAVAILABLE"
+    audit_verdict: str     # "SUPPORTED" | "INCONCLUSIVE" | "REJECTED" | "UNAVAILABLE"
+    ground_truth_count: int = 0
+    provenance_count: int = 0
+    created_at: datetime
+
+
+class GlobalEventsResponse(BaseModel):
+    items: List[GlobalEventItem]
+    total: int
+
+
+class GroundTruthAggregation(BaseModel):
+    total_reports: int = 0
+    confirmed_reports: int = 0
+    denied_reports: int = 0
+    pending_reports: int = 0
+
+
+class CharHistoryResponse(BaseModel):
+    case_id: str
+    event_type: str
+    char_name_or_id: str
+    geometry: Optional[GeoJSONGeometry] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    observation_start: datetime
+    observation_end: datetime
+    status: str
+    change_status: str  # "OBSERVED CHANGE" | "POTENTIAL CHANGE" | "INCONCLUSIVE" | "NO SUFFICIENT EVIDENCE" | "UNAVAILABLE"
+    latest_delta_backscatter: Optional[float] = None
+    latest_affected_area: Optional[float] = None
+    evidence_status: str
+    audit_verdict: str
+    ground_truth: GroundTruthAggregation
+    historical_observations: List[TimelineEventItem] = []
+    provenance_records: List[ProvenanceResponse] = []
+    alerts: List[ThresholdAlertResponse] = []
+

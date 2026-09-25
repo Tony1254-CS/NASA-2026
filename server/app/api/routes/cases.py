@@ -17,6 +17,7 @@ from app.schemas.case import (
     ThresholdAlertCreate,
     ThresholdAlertUpdate,
     ThresholdAlertResponse,
+    AlertAcknowledgePayload,
 )
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -104,6 +105,28 @@ def update_case_alert(
     Update threshold alert status, threshold value, or toggle active state.
     """
     return CaseService.update_alert(db=db, alert_id=alert_id, payload=payload)
+
+
+@router.post("/{case_id}/alerts/{alert_id}/acknowledge", response_model=ThresholdAlertResponse, status_code=status.HTTP_200_OK)
+def acknowledge_case_alert(
+    case_id: str,
+    alert_id: str,
+    payload: Optional[AlertAcknowledgePayload] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Acknowledge a threshold alert state (UNREAD -> READ / ACKNOWLEDGED).
+    """
+    status_val = payload.acknowledgement_status if payload else "ACKNOWLEDGED"
+    return CaseService.acknowledge_alert(db=db, case_id=case_id, alert_id=alert_id, status_val=status_val)
+
+
+@router.get("/{case_id}/community-reports", status_code=status.HTTP_200_OK)
+def get_case_community_reports(case_id: str, db: Session = Depends(get_db)):
+    """
+    Retrieve structured community sentinel reports and report aggregation for a case.
+    """
+    return CaseService.get_community_reports(db=db, case_id=case_id)
 
 
 @router.post(
@@ -209,6 +232,7 @@ async def create_field_observation(
         observed_at=final_observed_at,
         latitude=final_latitude,
         longitude=final_longitude,
+        source_type="human_observation",
     )
 
     return CaseService.create_field_observation(db=db, case_id=case_id, payload=create_payload)
@@ -257,6 +281,49 @@ def run_case_sentinel_agents(case_id: str, db: Session = Depends(get_db)):
     Produces structured outputs, execution logs, and provenance metadata.
     """
     return CaseService.run_sentinel_agents(db=db, case_id=case_id)
+
+
+global_router = APIRouter(prefix="/global", tags=["global"])
+
+
+@global_router.get("/events", status_code=status.HTTP_200_OK)
+def get_global_pulse_events(
+    event_type: Optional[str] = Query(None, description="Optional filter by case event category"),
+    audit_verdict: Optional[str] = Query(None, description="Optional filter by self-audit verdict (SUPPORTED, INCONCLUSIVE, REJECTED)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Executes Phase 5.1 Global Pulse planetary case aggregator using REAL database cases.
+    Returns mapped spatial coordinates, evidence fusion status, self-audit verdicts, and provenance counts.
+    """
+    return CaseService.get_global_events(db=db, event_type=event_type, audit_verdict=audit_verdict)
+
+
+@router.get("/{case_id}/char-history", status_code=status.HTTP_200_OK)
+def get_char_guardian_history(case_id: str, db: Session = Depends(get_db)):
+    """
+    Executes Phase 5.1 Char Guardian river-island / char change inspection for a target case.
+    Structures historical observations, ground truth report aggregations, threshold alerts, and provenance lineage.
+    Enforces scientifically safe phrasing ('OBSERVED CHANGE' / 'Observed SAR change') without unverified erosion claims.
+    """
+    return CaseService.get_char_history(db=db, case_id=case_id)
+
+
+@router.post("/{case_id}/alerts/{alert_id}/acknowledge", status_code=status.HTTP_200_OK)
+def acknowledge_case_alert(
+    case_id: str,
+    alert_id: str,
+    payload: AlertAcknowledgePayload,
+    db: Session = Depends(get_db),
+):
+    """
+    Acknowledges a field alert for a target case.
+    Validates status (UNREAD, READ, ACKNOWLEDGED) and case ownership.
+    """
+    return CaseService.acknowledge_alert(db=db, case_id=case_id, alert_id=alert_id, status_val=payload.get_status())
+
+
+
 
 
 
