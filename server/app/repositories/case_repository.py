@@ -9,8 +9,10 @@ from app.models.case import (
     Provenance,
     FieldObservation,
     ChallengeCheck,
+    Interpretation,
     ThresholdAlert,
 )
+
 
 
 class CaseRepository:
@@ -206,3 +208,104 @@ class CaseRepository:
         db.commit()
         db.refresh(alert)
         return alert
+
+    @staticmethod
+    def save_evidence_record(
+        db: Session,
+        case_id: str,
+        source_type: str,
+        collection_id: Optional[str] = None,
+        granule_id: Optional[str] = None,
+        time_start: Optional[datetime] = None,
+        time_end: Optional[datetime] = None,
+        role: Optional[str] = None,
+        status: str = "evaluated",
+        visualization_uri: Optional[str] = None,
+    ) -> Evidence:
+        ev = Evidence(
+            case_id=case_id,
+            source_type=source_type,
+            collection_id=collection_id,
+            granule_id=granule_id,
+            time_start=time_start,
+            time_end=time_end,
+            role=role,
+            status=status,
+            visualization_uri=visualization_uri,
+        )
+        db.add(ev)
+        db.commit()
+        db.refresh(ev)
+        return ev
+
+    @staticmethod
+    def save_provenance_record(
+        db: Session,
+        case_id: str,
+        evidence_id: Optional[str] = None,
+        collection_id: Optional[str] = None,
+        granule_id: Optional[str] = None,
+        product_id: Optional[str] = None,
+        acquisition_time: Optional[datetime] = None,
+        processing_method: Optional[str] = None,
+        calculation_method: Optional[str] = None,
+        source_reference: Optional[str] = None,
+    ) -> Provenance:
+        prov = Provenance(
+            case_id=case_id,
+            evidence_id=evidence_id,
+            collection_id=collection_id,
+            granule_id=granule_id,
+            product_id=product_id,
+            acquisition_time=acquisition_time,
+            processing_method=processing_method,
+            calculation_method=calculation_method,
+            source_reference=source_reference,
+        )
+        db.add(prov)
+        db.commit()
+        db.refresh(prov)
+        return prov
+
+    @staticmethod
+    def save_interpretation_record(
+        db: Session,
+        case_id: str,
+        narrative: str,
+        uncertainty: Optional[float] = None,
+    ) -> Interpretation:
+        interp = Interpretation(
+            case_id=case_id,
+            narrative=narrative,
+            uncertainty=uncertainty,
+        )
+        db.add(interp)
+        db.commit()
+        db.refresh(interp)
+        return interp
+
+    @staticmethod
+    def save_challenge_check(
+        db: Session,
+        case_id: str,
+        check_type: str,
+        status: str,
+        value: Optional[str] = None,
+        threshold: Optional[str] = None,
+        rationale: Optional[str] = None,
+        source: Optional[str] = None,
+    ) -> ChallengeCheck:
+        check = ChallengeCheck(
+            case_id=case_id,
+            check_type=check_type,
+            status=status,
+            value=value,
+            threshold=threshold,
+            rationale=rationale,
+            source=source,
+        )
+        db.add(check)
+        db.commit()
+        db.refresh(check)
+        return check
+

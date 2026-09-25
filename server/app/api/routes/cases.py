@@ -212,3 +212,52 @@ async def create_field_observation(
     )
 
     return CaseService.create_field_observation(db=db, case_id=case_id, payload=create_payload)
+
+
+@router.post("/{case_id}/evaluate-evidence", status_code=status.HTTP_200_OK)
+def evaluate_case_evidence(case_id: str, db: Session = Depends(get_db)):
+    """
+    Executes Phase 4.1 Cross-Mission Evidence Engine for a TRACE investigation case.
+    Discovers independent NASA satellite observations (FIRMS, GPM, MODIS), performs spatial & temporal
+    correlations, executes evidence fusion, and persists evidence lineage & non-causal hypothesis records.
+    """
+    return CaseService.evaluate_evidence_fusion(db=db, case_id=case_id)
+
+
+@router.post("/{case_id}/self-audit", status_code=status.HTTP_200_OK)
+def evaluate_case_self_audit(case_id: str, db: Session = Depends(get_db)):
+    """
+    Executes Phase 4.2 Challenge the Finding / Self-Audit Engine for a TRACE investigation case.
+    Runs 7 deterministic scientific validation checks (data quality, phase coherence, spatiotemporal consistency,
+    atmospheric artifact risk, multi-sensor coverage, and ground-truth verification) and produces a non-blind
+    SUPPORTED, INCONCLUSIVE, or REJECTED determination.
+    """
+    return CaseService.evaluate_self_audit(db=db, case_id=case_id)
+
+
+@router.post("/{case_id}/simulate-scenario", status_code=status.HTTP_200_OK)
+def simulate_case_scenario(
+    case_id: str,
+    water_level_offset_m: float = Query(1.0, ge=0.0, le=10.0, description="Water level elevation increase in meters (+0.5m, +1.0m, +2.0m)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Executes Phase 4.5 Scenario Simulator for a TRACE investigation case.
+    Calculates elevation/geospatial water level impact scenarios (+0.5m, +1.0m, +2.0m).
+    Mandatory disclaimer: 'Scenario simulation — not a forecast.'
+    """
+    return CaseService.simulate_scenario(db=db, case_id=case_id, water_level_offset_m=water_level_offset_m)
+
+
+@router.post("/{case_id}/run-sentinel-agents", status_code=status.HTTP_200_OK)
+def run_case_sentinel_agents(case_id: str, db: Session = Depends(get_db)):
+    """
+    Executes Phase 4.6 Autonomous Sentinel Agents workflow for a TRACE investigation case.
+    Orchestrates 5 specialized agents: DataAgent -> DetectionAgent -> EvidenceAgent -> ChallengeAgent -> InterpretationAgent.
+    Produces structured outputs, execution logs, and provenance metadata.
+    """
+    return CaseService.run_sentinel_agents(db=db, case_id=case_id)
+
+
+
+

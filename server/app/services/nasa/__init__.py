@@ -8,6 +8,7 @@ from app.services.nasa.cmr import CMRSearchService
 from app.services.nasa.nisar import NisarDiscoveryService
 from app.services.nasa.gpm import GpmDiscoveryService
 from app.services.nasa.modis import ModisDiscoveryService
+from app.services.nasa.firms import FirmsDiscoveryService
 
 __all__ = [
     "NASAObservation",
@@ -18,4 +19,6 @@ __all__ = [
     "NisarDiscoveryService",
     "GpmDiscoveryService",
     "ModisDiscoveryService",
+    "FirmsDiscoveryService",
 ]
+

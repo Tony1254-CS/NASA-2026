@@ -6,6 +6,8 @@ from app.core.config import settings
 from app.services.nasa.nisar import NisarDiscoveryService
 from app.services.nasa.gpm import GpmDiscoveryService
 from app.services.nasa.modis import ModisDiscoveryService
+from app.services.nasa.firms import FirmsDiscoveryService
+
 from app.services.nasa.schemas import (
     NASAObservationSearchResponse,
     NASAHealthResponse,
@@ -107,7 +109,40 @@ def search_modis_observations(
     )
 
 
+@router.get("/firms/search", response_model=NASAObservationSearchResponse, status_code=status.HTTP_200_OK)
+def search_firms_observations(
+    bbox: Optional[str] = Query(None, description="Bounding box formatted as 'min_lon,min_lat,max_lon,max_lat'"),
+    start_date: Optional[str] = Query(None, description="Start date ISO string"),
+    end_date: Optional[str] = Query(None, description="End date ISO string"),
+    source_product: Optional[str] = Query("VIIRS_NOAA20_NRT", description="FIRMS product filter: VIIRS_NOAA20_NRT, VIIRS_SNPP_NRT, MODIS_NRT"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+):
+    """
+    Discover NASA FIRMS active fire observation metadata for thermal anomaly evidence discovery.
+    """
+    service = FirmsDiscoveryService()
+    items = service.discover_firms_observations(
+        bbox=bbox,
+        start_date=start_date,
+        end_date=end_date,
+        source_product=source_product or "VIIRS_NOAA20_NRT",
+        page_size=page_size,
+    )
+    return NASAObservationSearchResponse(
+        items=items,
+        total=len(items),
+        source_query={
+            "bbox": bbox,
+            "start_date": start_date,
+            "end_date": end_date,
+            "source_product": source_product,
+            "page_size": page_size,
+        },
+    )
+
+
 @router.get("/health", response_model=NASAHealthResponse, status_code=status.HTTP_200_OK)
+
 def get_nasa_access_health():
     """
     Internal health check probe verifying NASA CMR API reachability and authentication status.

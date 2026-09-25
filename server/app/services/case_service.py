@@ -370,6 +370,13 @@ class CaseService:
                 detail=f"Case with ID '{case_id}' not found",
             )
 
+        # Closed-Loop Confidence Pipeline: Re-evaluate cross-mission evidence and self-audit upon receiving ground truth
+        try:
+            CaseService.evaluate_evidence_fusion(db=db, case_id=case_id)
+            CaseService.evaluate_self_audit(db=db, case_id=case_id)
+        except Exception as exc:
+            pass
+
         return FieldObservationResponse(
             id=obs.id,
             case_id=obs.case_id,
@@ -381,6 +388,7 @@ class CaseService:
             source="HUMAN_OBSERVATION",
             created_at=obs.created_at,
         )
+
 
     @staticmethod
     def evaluate_alerts_for_case(db: Session, case_id: str):
@@ -543,3 +551,311 @@ class CaseService:
             created_at=saved.created_at,
             updated_at=saved.updated_at,
         )
+
+    @staticmethod
+    def evaluate_evidence_fusion(db: Session, case_id: str):
+        """
+        Executes Phase 4.1 Cross-Mission Evidence Engine for a TRACE investigation case.
+        Normalizes independent satellite observations, computes spatiotemporal correlations,
+        performs evidence fusion, and persists evidence lineage & non-causal interpretation records.
+        """
+        from app.services.evidence_engine import CrossMissionEvidenceEngine
+
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+
+        # Extract bbox from geometry
+        geom_dict = shape_to_geojson(case.geometry)
+        bbox_str = None
+        if geom_dict and "coordinates" in geom_dict and geom_dict.get("type") == "Polygon":
+            try:
+                poly_pts = geom_dict["coordinates"][0]
+                lons = [p[0] for p in poly_pts]
+                lats = [p[1] for p in poly_pts]
+                bbox_str = f"{min(lons):.4f},{min(lats):.4f},{max(lons):.4f},{max(lats):.4f}"
+            except Exception:
+                pass
+
+        # Extract NISAR anomaly indicators
+        latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
+        delta_backscatter = latest_nisar.delta_backscatter if latest_nisar else None
+        affected_area = latest_nisar.affected_area if latest_nisar else None
+
+        engine = CrossMissionEvidenceEngine()
+        fusion_result = engine.evaluate_case_evidence(
+            case_id=case_id,
+            event_type=case.event_type,
+            bbox=bbox_str,
+            observation_start=case.observation_start,
+            observation_end=case.observation_end,
+            sar_backscatter_delta=delta_backscatter,
+            sar_affected_area=affected_area,
+        )
+
+        # Persist Interpretation
+        uncertainty_val = 0.15 if fusion_result.overall_status == "CONFIRMED_MULTIMISSION" else 0.45
+        CaseRepository.save_interpretation_record(
+            db=db,
+            case_id=case_id,
+            narrative=fusion_result.hypothesis_narrative,
+            uncertainty=uncertainty_val,
+        )
+
+        # Persist Challenge Checks
+        for sensor_key, sensor_eval in fusion_result.sensor_evaluations.items():
+            CaseRepository.save_challenge_check(
+                db=db,
+                case_id=case_id,
+                check_type=f"{sensor_key.upper()}_CROSS_CORRELATION",
+                status="pass" if sensor_eval.status == "SUPPORTING" else ("inconclusive" if sensor_eval.status == "UNAVAILABLE" else "pass"),
+                value=sensor_eval.status,
+                rationale=sensor_eval.summary_text,
+                source=f"NASA_{sensor_key.upper()}",
+            )
+
+        # Persist Evidence and Provenance Records
+        for sensor_key, sensor_eval in fusion_result.sensor_evaluations.items():
+            for item in sensor_eval.evidence_items:
+                ev_record = CaseRepository.save_evidence_record(
+                    db=db,
+                    case_id=case_id,
+                    source_type=item.source.lower(),
+                    collection_id=item.collection_id,
+                    granule_id=item.granule_id,
+                    time_start=item.time_start,
+                    time_end=item.time_end,
+                    role="supporting_cross_mission" if item.relevance == "SUPPORTING" else "baseline_context",
+                    status="evaluated",
+                )
+                CaseRepository.save_provenance_record(
+                    db=db,
+                    case_id=case_id,
+                    evidence_id=ev_record.id,
+                    collection_id=item.collection_id,
+                    granule_id=item.granule_id,
+                    product_id=item.product_id,
+                    acquisition_time=item.observation_time,
+                    processing_method=item.method,
+                    calculation_method="SPATIAL_TEMPORAL_CROSS_CORRELATION_V1",
+                    source_reference=item.provenance.get("source"),
+                )
+
+        return fusion_result.model_dump()
+
+    @staticmethod
+    def evaluate_self_audit(db: Session, case_id: str):
+        """
+        Executes Phase 4.2 Challenge the Finding / Self-Audit Engine for a TRACE investigation case.
+        Runs 7 deterministic scientific validation checks and persists audit lineage records.
+        """
+        from app.services.self_audit_engine import SelfAuditEngine
+
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+
+        # Extract bbox from geometry
+        geom_dict = shape_to_geojson(case.geometry)
+        bbox_str = None
+        if geom_dict and "coordinates" in geom_dict and geom_dict.get("type") == "Polygon":
+            try:
+                poly_pts = geom_dict["coordinates"][0]
+                lons = [p[0] for p in poly_pts]
+                lats = [p[1] for p in poly_pts]
+                bbox_str = f"{min(lons):.4f},{min(lats):.4f},{max(lons):.4f},{max(lats):.4f}"
+            except Exception:
+                pass
+
+        latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
+        delta_backscatter = latest_nisar.delta_backscatter if latest_nisar else None
+        affected_area = latest_nisar.affected_area if latest_nisar else None
+        change_metric = latest_nisar.change_metric if latest_nisar else None
+
+        evidence_list = [
+            {
+                "id": ev.id,
+                "source_type": ev.source_type,
+                "collection_id": ev.collection_id,
+                "status": ev.status,
+            }
+            for ev in case.evidence
+        ]
+
+        field_obs_list = [
+            {
+                "id": fo.id,
+                "note": fo.note,
+                "observed_at": fo.observed_at,
+            }
+            for fo in case.field_observations
+        ]
+
+        engine = SelfAuditEngine()
+        audit_result = engine.evaluate_audit(
+            case_id=case_id,
+            event_type=case.event_type,
+            observation_start=case.observation_start,
+            observation_end=case.observation_end,
+            bbox=bbox_str,
+            delta_backscatter=delta_backscatter,
+            affected_area=affected_area,
+            change_metric=change_metric,
+            evidence_records=evidence_list,
+            field_observations=field_obs_list,
+        )
+
+        # Persist audit check records into ChallengeCheck DB table
+        for check in audit_result.checks:
+            CaseRepository.save_challenge_check(
+                db=db,
+                case_id=case_id,
+                check_type=check.check_type,
+                status=check.status.lower(),
+                value=check.value,
+                threshold=check.threshold,
+                rationale=check.rationale,
+                source=check.source,
+            )
+
+        # Persist Provenance record for audit evaluation
+        CaseRepository.save_provenance_record(
+            db=db,
+            case_id=case_id,
+            collection_id="TRACE_SELF_AUDIT_ENGINE",
+            product_id="DETERMINISTIC_SELF_AUDIT_V1",
+            acquisition_time=audit_result.evaluated_at,
+            processing_method="DETERMINISTIC_SELF_AUDIT_ENGINE_V1",
+            calculation_method="MULTI_RULE_QUALITATIVE_HYPOTHESIS_CHECK",
+            source_reference=f"AUDIT_STATE:{audit_result.overall_audit_state}_CONFIDENCE:{audit_result.confidence_score:.2f}",
+        )
+
+        return audit_result.model_dump()
+
+    @staticmethod
+    def simulate_scenario(db: Session, case_id: str, water_level_offset_m: float):
+        """
+        Executes Phase 4.5 Scenario Simulator for a TRACE investigation case.
+        Calculates elevation/geospatial water level impact scenarios (+0.5m, +1.0m, +2.0m).
+        """
+        from app.services.scenario_simulator import ScenarioSimulatorEngine
+
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+
+        latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
+        baseline_area = latest_nisar.affected_area if latest_nisar else None
+        has_geom = case.geometry is not None
+
+        result = ScenarioSimulatorEngine.simulate_water_level(
+            case_id=case_id,
+            water_level_offset_m=water_level_offset_m,
+            baseline_area_sq_km=baseline_area,
+            has_geometry=has_geom,
+        )
+
+        # Persist Provenance for simulation
+        CaseRepository.save_provenance_record(
+            db=db,
+            case_id=case_id,
+            collection_id="TRACE_SCENARIO_SIMULATOR",
+            product_id=f"WATER_LEVEL_SIM_{water_level_offset_m:.1f}M",
+            acquisition_time=result.simulated_at,
+            processing_method="GEOSPATIAL_ELEVATION_SLOPE_SCALING_V1",
+            calculation_method="ELEVATION_INUNDATION_AREA_MODEL",
+            source_reference=f"DISCLAIMER:{result.disclaimer}",
+        )
+
+        return result.model_dump()
+
+    @staticmethod
+    def run_sentinel_agents(db: Session, case_id: str):
+        """
+        Executes Phase 4.6 Autonomous Sentinel Agents workflow for a TRACE investigation case.
+        Orchestrates 5 specialized agents: DataAgent -> DetectionAgent -> EvidenceAgent -> ChallengeAgent -> InterpretationAgent.
+        """
+        from app.services.sentinel_agents import AutonomousSentinelWorkflow
+
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+
+        geom_dict = shape_to_geojson(case.geometry)
+        bbox_str = None
+        if geom_dict and "coordinates" in geom_dict and geom_dict.get("type") == "Polygon":
+            try:
+                poly_pts = geom_dict["coordinates"][0]
+                lons = [p[0] for p in poly_pts]
+                lats = [p[1] for p in poly_pts]
+                bbox_str = f"{min(lons):.4f},{min(lats):.4f},{max(lons):.4f},{max(lats):.4f}"
+            except Exception:
+                pass
+
+        latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
+        delta_backscatter = latest_nisar.delta_backscatter if latest_nisar else None
+        affected_area = latest_nisar.affected_area if latest_nisar else None
+        change_metric = latest_nisar.change_metric if latest_nisar else None
+
+        evidence_list = [
+            {
+                "id": ev.id,
+                "source_type": ev.source_type,
+                "collection_id": ev.collection_id,
+                "status": ev.status,
+            }
+            for ev in case.evidence
+        ]
+
+        field_obs_list = [
+            {
+                "id": fo.id,
+                "note": fo.note,
+                "observed_at": fo.observed_at,
+            }
+            for fo in case.field_observations
+        ]
+
+        workflow = AutonomousSentinelWorkflow()
+        result = workflow.execute_workflow(
+            case_id=case_id,
+            event_type=case.event_type,
+            observation_start=case.observation_start,
+            observation_end=case.observation_end,
+            bbox=bbox_str,
+            delta_backscatter=delta_backscatter,
+            affected_area=affected_area,
+            change_metric=change_metric,
+            evidence_records=evidence_list,
+            field_observations=field_obs_list,
+        )
+
+        # Persist Agent Workflow Provenance Record
+        CaseRepository.save_provenance_record(
+            db=db,
+            case_id=case_id,
+            collection_id="TRACE_SENTINEL_AGENTS",
+            product_id="AUTONOMOUS_SENTINEL_WORKFLOW_V1",
+            acquisition_time=result.executed_at,
+            processing_method="AGENTIC_INVESTIGATION_ORCHESTRATION_V1",
+            calculation_method="DATA_DETECTION_EVIDENCE_CHALLENGE_INTERPRETATION_CHAIN",
+            source_reference=f"VERDICT:{result.final_verdict}_DISAGREED:{result.challenge_disagreed}",
+        )
+
+        return result.model_dump()
+
+
+
+

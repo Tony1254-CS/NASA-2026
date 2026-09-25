@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     EARTHDATA_TOKEN: Optional[str] = None
     CMR_BASE_URL: str = "https://cmr.earthdata.nasa.gov"
     ASF_API_BASE_URL: str = "https://api.daac.asf.alaska.edu"
+    FIRMS_MAP_KEY: Optional[str] = None
+    FIRMS_BASE_URL: str = "https://firms.modaps.eosdis.nasa.gov/api"
 
     model_config = SettingsConfigDict(
         env_file=".env",

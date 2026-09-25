@@ -35,6 +35,11 @@ import {
   type CaseDetailResponse,
   type TimelineResponse,
 } from '@/lib/api';
+import { EvidenceConfidenceWall } from '@/components/scientific/EvidenceConfidenceWall';
+import { ChangeLensesView } from '@/components/scientific/ChangeLensesView';
+import { OpticalSarSwipeComparison } from '@/components/scientific/OpticalSarSwipeComparison';
+import { EnhancedEventTimeline } from '@/components/scientific/EnhancedEventTimeline';
+
 
 interface ScanScreenProps {
   overrideCaseId?: string | null;
@@ -304,7 +309,9 @@ export function ScanScreen({
 
       {/* SECTION 5: SELECTED CASE CARD */}
       {!loadingCases && !apiError && caseDetail && (
-        <Card className="border-primary/30 bg-gradient-to-b from-card to-card/80 shadow-md relative overflow-hidden">
+        <>
+          <Card className="border-primary/30 bg-gradient-to-b from-card to-card/80 shadow-md relative overflow-hidden">
+
           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
 
           <CardHeader className="p-4 pb-2">
@@ -448,9 +455,37 @@ export function ScanScreen({
             </Button>
           </CardContent>
         </Card>
+
+        {/* PHASE 4.4 MISSION CONTROL SCIENTIFIC UI */}
+        {selectedCaseId && (
+          <div className="space-y-6 pt-2">
+            {/* FEATURE 1: EVIDENCE / CONFIDENCE WALL */}
+            <EvidenceConfidenceWall caseId={selectedCaseId} />
+
+            {/* FEATURE 2: CHANGE LENSES */}
+            <ChangeLensesView caseDetail={caseDetail} />
+
+            {/* FEATURE 3: OPTICAL VS SAR SWIPE COMPARISON */}
+            <OpticalSarSwipeComparison
+              opticalUri={caseDetail?.field_observations?.[0]?.photo_reference || null}
+              sarUri={primaryNisarMeasurement?.raster_reference || null}
+            />
+
+            {/* FEATURE 4: EVENT TIMELINE */}
+            <EnhancedEventTimeline
+              timeline={timeline}
+              observationStart={caseDetail?.observation_start}
+              observationEnd={caseDetail?.observation_end}
+            />
+          </div>
+        )}
+        </>
       )}
 
+
       {/* SECTION 6: NO CASES EMPTY STATE */}
+
+
       {!loadingCases && !apiError && cases.length === 0 && (
         <Card className="border-border/60 text-center">
           <CardContent className="p-8 space-y-3">

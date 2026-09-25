@@ -378,3 +378,203 @@ export async function updateCaseAlert(
 
   return res.json();
 }
+
+export interface EvidenceFusionResponse {
+  case_id: string;
+  event_type: string;
+  sar_anomaly_status: 'DETECTED' | 'NOT_DETECTED' | 'UNKNOWN';
+  overall_status: 'CONFIRMED_MULTIMISSION' | 'PARTIALLY_SUPPORTED' | 'INCONCLUSIVE' | 'CONTRADICTED';
+  sensor_evaluations: Record<string, {
+    sensor_name: string;
+    status: 'SUPPORTING' | 'NOT_SUPPORTING' | 'NEUTRAL' | 'UNAVAILABLE';
+    summary_text: string;
+    evidence_items: any[];
+  }>;
+  hypothesis_narrative: string;
+  non_causal_statement: string;
+
+  evaluated_at: string;
+  provenance_records: any[];
+}
+
+/**
+ * Execute Phase 4.1 Cross-Mission Evidence Engine evaluation for a case
+ */
+export async function evaluateCaseEvidence(caseId: string): Promise<EvidenceFusionResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/evaluate-evidence`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `HTTP ${res.status} failed to evaluate evidence fusion`);
+  }
+
+  return res.json();
+}
+
+export interface NASAObservationItem {
+  source: string;
+  mission: string;
+  product_id: string;
+  granule_id: string;
+  collection_id: string;
+  observation_time: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  spatial_extent?: GeoJSONGeometry | null;
+  product_type: string;
+  access_links?: string[];
+  metadata_reference?: string | null;
+}
+
+export interface NASAObservationSearchResponse {
+  items: NASAObservationItem[];
+  total: number;
+  source_query?: Record<string, any>;
+}
+
+/**
+ * Fetch NASA FIRMS active fire observations
+ */
+export async function fetchFirmsObservations(bbox?: string, startDate?: string, endDate?: string): Promise<NASAObservationSearchResponse> {
+  const params = new URLSearchParams();
+  if (bbox) params.append('bbox', bbox);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+
+  const url = getApiUrl(`/api/nasa/firms/search?${params.toString()}`);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} failed to fetch FIRMS observations`);
+  }
+
+  return res.json();
+}
+
+export interface AuditCheckItem {
+  check_type: string;
+  rule_name: string;
+  rule_version: string;
+  status: 'PASS' | 'WARNING' | 'FAIL' | 'NOT_EVALUATED';
+  value?: string | null;
+  threshold?: string | null;
+  rationale: string;
+  source: string;
+}
+
+export interface SelfAuditResponse {
+  case_id: string;
+  overall_audit_state: 'SUPPORTED' | 'INCONCLUSIVE' | 'REJECTED';
+  confidence_score: number;
+  summary_explanation: string;
+  checks: AuditCheckItem[];
+  evaluated_at: string;
+}
+
+/**
+ * Execute Phase 4.2 Challenge the Finding / Self-Audit Engine for a case
+ */
+export async function evaluateSelfAudit(caseId: string): Promise<SelfAuditResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/self-audit`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `HTTP ${res.status} failed to evaluate self-audit`);
+  }
+
+  return res.json();
+}
+
+export interface ScenarioSimulationResponse {
+  case_id: string;
+  water_level_offset_m: number;
+  disclaimer: string;
+  affected_area_sq_km?: number | null;
+  affected_population_text: string;
+  affected_schools_text: string;
+  affected_health_facilities_text: string;
+  simulated_at: string;
+}
+
+/**
+ * Execute Phase 4.5 Scenario Simulator for a case (+0.5m, +1.0m, +2.0m)
+ */
+export async function simulateScenario(caseId: string, waterLevelOffsetM: number = 1.0): Promise<ScenarioSimulationResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/simulate-scenario?water_level_offset_m=${waterLevelOffsetM}`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `HTTP ${res.status} failed to execute scenario simulation`);
+  }
+
+  return res.json();
+}
+
+export interface AgentStepOutput {
+  agent_name: string;
+  status: string;
+  summary: string;
+  data_payload: Record<string, any>;
+  provenance: Record<string, any>;
+  timestamp: string;
+}
+
+export interface SentinelWorkflowResponse {
+  case_id: string;
+  event_type: string;
+  overall_workflow_status: string;
+  final_verdict: string;
+  challenge_disagreed: boolean;
+  execution_log: AgentStepOutput[];
+  interpretation_narrative: string;
+  non_causal_statement: string;
+  executed_at: string;
+}
+
+/**
+ * Execute Phase 4.6 Autonomous Sentinel Agents workflow for a case
+ */
+export async function runSentinelAgents(caseId: string): Promise<SentinelWorkflowResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/run-sentinel-agents`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `HTTP ${res.status} failed to execute sentinel agents workflow`);
+  }
+
+  return res.json();
+}
+
+
+
+
