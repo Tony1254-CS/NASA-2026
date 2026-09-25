@@ -17,7 +17,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
         {/* SCAN TAB */}
         <button
           onClick={() => onTabChange('scan')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 ${
+          className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition-all duration-200 ${
             activeTab === 'scan'
               ? 'text-sky-300 font-bold bg-sky-500/15 border border-sky-400/30 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
@@ -31,7 +31,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
         {/* PULSE TAB */}
         <button
           onClick={() => onTabChange('pulse')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 ${
+          className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition-all duration-200 ${
             activeTab === 'pulse'
               ? 'text-sky-300 font-bold bg-sky-500/15 border border-sky-400/30 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
@@ -45,7 +45,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
         {/* CHAR GUARDIAN TAB */}
         <button
           onClick={() => onTabChange('char')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 ${
+          className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition-all duration-200 ${
             activeTab === 'char'
               ? 'text-sky-300 font-bold bg-sky-500/15 border border-sky-400/30 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
@@ -59,7 +59,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
         {/* FEEL TAB */}
         <button
           onClick={() => onTabChange('feel')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 ${
+          className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition-all duration-200 ${
             activeTab === 'feel'
               ? 'text-sky-300 font-bold bg-sky-500/15 border border-sky-400/30 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
@@ -73,7 +73,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
         {/* VERIFY TAB */}
         <button
           onClick={() => onTabChange('verify')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 ${
+          className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-lg transition-all duration-200 ${
             activeTab === 'verify'
               ? 'text-sky-300 font-bold bg-sky-500/15 border border-sky-400/30 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'

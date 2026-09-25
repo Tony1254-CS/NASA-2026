@@ -11,6 +11,8 @@ import { VerifyScreen } from '@/components/mobile/VerifyScreen';
 import { GlobalPulseView } from '@/components/scientific/GlobalPulseView';
 import { CharGuardianView } from '@/components/scientific/CharGuardianView';
 
+import { HeroMissionHeader } from '@/components/mobile/HeroMissionHeader';
+
 export default function HomePage() {
   const { status: locationStatus } = useGeolocation();
   const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
@@ -48,13 +50,17 @@ export default function HomePage() {
       <MobileHeader locationStatus={locationStatus} serverStatus={serverStatus} />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-4 pb-20">
+      <main className="flex-1 pt-2 pb-20 space-y-2">
         {activeTab === 'scan' && (
-          <ScanScreen
-            overrideCaseId={currentCaseId}
-            onNavigateToFeel={() => setActiveTab('feel')}
-            onNavigateToVerify={() => setActiveTab('verify')}
-          />
+          <>
+            {/* Mission Control Hero Explanation & Module Cards — HOME DISCOVERY ONLY */}
+            <HeroMissionHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            <ScanScreen
+              overrideCaseId={currentCaseId}
+              onNavigateToFeel={() => setActiveTab('feel')}
+              onNavigateToVerify={() => setActiveTab('verify')}
+            />
+          </>
         )}
 
         {activeTab === 'pulse' && (
