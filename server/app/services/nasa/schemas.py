@@ -22,6 +22,7 @@ class NASAObservation(BaseModel):
     spatial_extent: Optional[GeoJSONGeometry] = None
     product_type: str
     access_links: List[str] = Field(default_factory=list)
+    visualization_uri: Optional[str] = None
     metadata_reference: Optional[str] = None
 
 

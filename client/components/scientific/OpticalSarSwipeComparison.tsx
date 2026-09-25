@@ -4,6 +4,27 @@ import React, { useState } from 'react';
 import { Layers, Sliders, Image as ImageIcon, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
+/**
+ * Utility to validate whether a URL string is browser-renderable inside an HTML <img> element.
+ * Rejects null, undefined, empty strings, non-HTTP/HTTPS schemes (like s3://), and raw GeoTIFF files (.tif, .tiff).
+ */
+export function isBrowserRenderableImageUri(uri?: string | null): boolean {
+  if (!uri || typeof uri !== 'string') return false;
+  const cleanUri = uri.trim().toLowerCase();
+
+  // Must be an http:// or https:// URL
+  if (!cleanUri.startsWith('http://') && !cleanUri.startsWith('https://')) {
+    return false;
+  }
+
+  // Reject raw raster/archive extensions that browsers cannot render natively in <img>
+  if (cleanUri.endsWith('.tif') || cleanUri.endsWith('.tiff')) {
+    return false;
+  }
+
+  return true;
+}
+
 interface OpticalSarSwipeComparisonProps {
   opticalUri?: string | null;
   sarUri?: string | null;
@@ -18,9 +39,14 @@ export function OpticalSarSwipeComparison({
   sarTitle = 'NISAR L-band SAR Penetration Map',
 }: OpticalSarSwipeComparisonProps) {
   const [sliderPos, setSliderPos] = useState<number>(50);
+  const [opticalFailed, setOpticalFailed] = useState<boolean>(false);
+  const [sarFailed, setSarFailed] = useState<boolean>(false);
 
-  const hasOptical = Boolean(opticalUri);
-  const hasSar = Boolean(sarUri);
+  const isOpticalValid = isBrowserRenderableImageUri(opticalUri) && !opticalFailed;
+  const isSarValid = isBrowserRenderableImageUri(sarUri) && !sarFailed;
+
+  const hasOptical = Boolean(isOpticalValid);
+  const hasSar = Boolean(isSarValid);
 
   return (
     <Card className="glass-panel border-sky-500/20 shadow-xl relative overflow-hidden" role="region" aria-label="Optical vs SAR Swipe Comparison">
@@ -50,6 +76,7 @@ export function OpticalSarSwipeComparison({
               <img
                 src={sarUri!}
                 alt={sarTitle}
+                onError={() => setSarFailed(true)}
                 className="w-full h-full object-cover object-center"
               />
             ) : (
@@ -70,6 +97,7 @@ export function OpticalSarSwipeComparison({
               <img
                 src={opticalUri!}
                 alt={opticalTitle}
+                onError={() => setOpticalFailed(true)}
                 className="absolute inset-0 w-full h-full object-cover object-center max-w-none"
                 style={{ width: '100%', height: '100%' }}
               />

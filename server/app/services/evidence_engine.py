@@ -42,6 +42,7 @@ class NormalizedEvidence(BaseModel):
     spatial_relevance_score: float = 0.0  # 0.0 to 1.0
     temporal_correlation_score: float = 0.0  # 0.0 to 1.0
     data_quality: str = "VALIDATED"  # VALIDATED | NRT | ESTIMATED | UNAVAILABLE
+    visualization_uri: Optional[str] = None
     provenance: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -457,6 +458,7 @@ class CrossMissionEvidenceEngine:
                         spatial_relevance_score=1.0 if obs.spatial_extent else 0.5,
                         temporal_correlation_score=t_score,
                         data_quality="VALIDATED",
+                        visualization_uri=obs.visualization_uri,
                         provenance={
                             "source": "NASA_GPM",
                             "metadata_reference": obs.metadata_reference,
@@ -513,6 +515,7 @@ class CrossMissionEvidenceEngine:
                         spatial_relevance_score=1.0 if obs.spatial_extent else 0.5,
                         temporal_correlation_score=t_score,
                         data_quality="VALIDATED",
+                        visualization_uri=obs.visualization_uri,
                         provenance={
                             "source": "NASA_MODIS",
                             "metadata_reference": obs.metadata_reference,

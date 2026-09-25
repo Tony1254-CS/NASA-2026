@@ -37,7 +37,7 @@ import {
 } from '@/lib/api';
 import { EvidenceConfidenceWall } from '@/components/scientific/EvidenceConfidenceWall';
 import { ChangeLensesView } from '@/components/scientific/ChangeLensesView';
-import { OpticalSarSwipeComparison } from '@/components/scientific/OpticalSarSwipeComparison';
+import { OpticalSarSwipeComparison, isBrowserRenderableImageUri } from '@/components/scientific/OpticalSarSwipeComparison';
 import { EnhancedEventTimeline } from '@/components/scientific/EnhancedEventTimeline';
 
 
@@ -162,6 +162,55 @@ export function ScanScreen({
     }
     return caseDetail.nisar_measurements[0];
   }, [caseDetail]);
+
+  // Data-aware Optical Image Candidate from backend API records
+  const opticalUriCandidate = useMemo(() => {
+    if (!caseDetail) return null;
+
+    // 1. Check ground field observations
+    if (caseDetail.field_observations && caseDetail.field_observations.length > 0) {
+      const photoObs = caseDetail.field_observations.find((fo) => isBrowserRenderableImageUri(fo.photo_reference));
+      if (photoObs?.photo_reference) return photoObs.photo_reference;
+    }
+
+    // 2. Check evidence records for optical satellite imagery
+    if (caseDetail.evidence && caseDetail.evidence.length > 0) {
+      const opticalEv = caseDetail.evidence.find(
+        (e) =>
+          isBrowserRenderableImageUri(e.visualization_uri) &&
+          (e.role === 'optical' || ['modis', 'landsat', 'sentinel-2', 'optical', 'viirs'].includes(e.source_type?.toLowerCase() || ''))
+      );
+      if (opticalEv?.visualization_uri) return opticalEv.visualization_uri;
+
+      // Fall back to any valid evidence visualization URI
+      const anyValidEv = caseDetail.evidence.find((e) => isBrowserRenderableImageUri(e.visualization_uri));
+      if (anyValidEv?.visualization_uri) return anyValidEv.visualization_uri;
+    }
+
+    return null;
+  }, [caseDetail]);
+
+  // Data-aware SAR Image Candidate from backend API records
+  const sarUriCandidate = useMemo(() => {
+    if (!caseDetail) return null;
+
+    // 1. Check primary NISAR measurement raster reference (if browser-renderable HTTP/HTTPS URL)
+    if (primaryNisarMeasurement?.raster_reference && isBrowserRenderableImageUri(primaryNisarMeasurement.raster_reference)) {
+      return primaryNisarMeasurement.raster_reference;
+    }
+
+    // 2. Check evidence records for SAR/NISAR browser-renderable imagery
+    if (caseDetail.evidence && caseDetail.evidence.length > 0) {
+      const sarEv = caseDetail.evidence.find(
+        (e) =>
+          isBrowserRenderableImageUri(e.visualization_uri) &&
+          (e.role === 'sar' || ['nisar', 'sentinel-1', 'sar'].includes(e.source_type?.toLowerCase() || ''))
+      );
+      if (sarEv?.visualization_uri) return sarEv.visualization_uri;
+    }
+
+    return null;
+  }, [caseDetail, primaryNisarMeasurement]);
 
   const hasTriggeredAlert = useMemo(() => {
     return caseDetail?.threshold_alerts?.some((a) => a.is_active && a.triggered_state === 'TRIGGERED');
@@ -474,8 +523,8 @@ export function ScanScreen({
 
               {/* FEATURE 3: OPTICAL VS SAR SWIPE COMPARISON */}
               <OpticalSarSwipeComparison
-                opticalUri={caseDetail?.field_observations?.[0]?.photo_reference || null}
-                sarUri={primaryNisarMeasurement?.raster_reference || null}
+                opticalUri={opticalUriCandidate}
+                sarUri={sarUriCandidate}
               />
 
               {/* FEATURE 4: EVENT TIMELINE */}

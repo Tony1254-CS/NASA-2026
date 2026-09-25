@@ -96,12 +96,36 @@ class CMRSearchService:
                 except Exception:
                     pass
 
-            # Links Parsing
+            # Links Parsing & Visualization URI Extraction
             links = []
+            viz_uri: Optional[str] = None
+
             for link in entry.get("links", []):
                 href = link.get("href")
-                if href and href.startswith("http"):
-                    links.append(href)
+                if not href or not href.startswith("http"):
+                    continue
+
+                links.append(href)
+
+                # Identify official NASA/ASF browse and visualization links
+                rel = str(link.get("rel", "")).lower()
+                link_type = str(link.get("type", "")).upper()
+                inherited = link.get("inherited", False)
+
+                href_lower = href.lower()
+                is_img_ext = any(href_lower.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp"])
+                is_browse_keyword = any(k in href_lower for k in ["browse", "quicklook", "thumbnail", "preview"])
+
+                if (
+                    "GET RELATED VISUALIZATION" in link_type
+                    or "browse" in rel
+                    or "user/documentation#" in rel
+                    or (is_img_ext and is_browse_keyword)
+                ):
+                    if not viz_uri:
+                        viz_uri = href
+                elif is_img_ext and not viz_uri and not inherited:
+                    viz_uri = href
 
             observations.append(
                 NASAObservation(
@@ -116,6 +140,7 @@ class CMRSearchService:
                     spatial_extent=spatial,
                     product_type=product_type_label,
                     access_links=links,
+                    visualization_uri=viz_uri,
                     metadata_reference=f"{settings.CMR_BASE_URL}/search/concepts/{entry.get('id')}.json" if entry.get("id") else None,
                 )
             )

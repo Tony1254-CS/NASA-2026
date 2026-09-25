@@ -741,6 +741,7 @@ class CaseService:
                     time_end=item.time_end,
                     role="supporting_cross_mission" if item.relevance == "SUPPORTING" else "baseline_context",
                     status="evaluated",
+                    visualization_uri=item.visualization_uri,
                 )
                 CaseRepository.save_provenance_record(
                     db=db,
