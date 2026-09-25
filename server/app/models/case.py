@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     String,
     Float,
+    Boolean,
     DateTime,
     ForeignKey,
     func,
@@ -40,6 +41,7 @@ class Case(Base):
     interpretations = relationship("Interpretation", back_populates="case", cascade="all, delete-orphan")
     provenance_records = relationship("Provenance", back_populates="case", cascade="all, delete-orphan")
     field_observations = relationship("FieldObservation", back_populates="case", cascade="all, delete-orphan")
+    threshold_alerts = relationship("ThresholdAlert", back_populates="case", cascade="all, delete-orphan")
 
 
 class NisarMeasurement(Base):
@@ -165,3 +167,23 @@ class FieldObservation(Base):
     case = relationship("Case", back_populates="field_observations")
 
 
+class ThresholdAlert(Base):
+    """
+    User threshold subscription for anomaly alerts on real NISAR measurements.
+    """
+    __tablename__ = "threshold_alerts"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    case_id = Column(String, ForeignKey("cases.case_id", ondelete="CASCADE"), nullable=False, index=True)
+    metric_name = Column(String, nullable=False, default="delta_backscatter")  # delta_backscatter | affected_area
+    threshold_value = Column(Float, nullable=False, default=-2.0)
+    comparison = Column(String, nullable=False, default="less_than")  # less_than | greater_than | abs_greater_than
+    is_active = Column(Boolean, nullable=False, default=True)
+    triggered_state = Column(String, nullable=False, default="ARMED")  # ARMED | TRIGGERED
+    last_evaluated_val = Column(Float, nullable=True)
+    last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationship
+    case = relationship("Case", back_populates="threshold_alerts")

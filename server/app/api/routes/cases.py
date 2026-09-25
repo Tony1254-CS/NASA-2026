@@ -14,6 +14,9 @@ from app.schemas.case import (
     ChallengeCheckResponse,
     FieldObservationCreate,
     FieldObservationResponse,
+    ThresholdAlertCreate,
+    ThresholdAlertUpdate,
+    ThresholdAlertResponse,
 )
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -73,6 +76,34 @@ def get_case_challenge_checks(case_id: str, db: Session = Depends(get_db)):
     Retrieve stored challenge check records for a case. (READ-safe endpoint; engine computation occurs separately).
     """
     return CaseService.get_challenge_checks(db=db, case_id=case_id)
+
+
+@router.get("/{case_id}/alerts", response_model=List[ThresholdAlertResponse], status_code=status.HTTP_200_OK)
+def get_case_alerts(case_id: str, db: Session = Depends(get_db)):
+    """
+    Retrieve threshold anomaly alert subscriptions for a case.
+    """
+    return CaseService.get_alerts_for_case(db=db, case_id=case_id)
+
+
+@router.post("/{case_id}/alerts", response_model=ThresholdAlertResponse, status_code=status.HTTP_201_CREATED)
+def create_or_update_case_alert(
+    case_id: str, payload: ThresholdAlertCreate, db: Session = Depends(get_db)
+):
+    """
+    Configure or update a threshold alert for a specific case ID.
+    """
+    return CaseService.create_or_update_alert(db=db, case_id=case_id, payload=payload)
+
+
+@router.patch("/{case_id}/alerts/{alert_id}", response_model=ThresholdAlertResponse, status_code=status.HTTP_200_OK)
+def update_case_alert(
+    case_id: str, alert_id: str, payload: ThresholdAlertUpdate, db: Session = Depends(get_db)
+):
+    """
+    Update threshold alert status, threshold value, or toggle active state.
+    """
+    return CaseService.update_alert(db=db, alert_id=alert_id, payload=payload)
 
 
 @router.post(
@@ -163,7 +194,6 @@ async def create_field_observation(
         final_latitude = payload.latitude
         final_longitude = payload.longitude
 
-
     if final_latitude is None or final_longitude is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -182,4 +212,3 @@ async def create_field_observation(
     )
 
     return CaseService.create_field_observation(db=db, case_id=case_id, payload=create_payload)
-

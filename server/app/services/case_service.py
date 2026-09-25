@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime, timezone
+from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.repositories.case_repository import CaseRepository
@@ -16,7 +17,11 @@ from app.schemas.case import (
     FieldObservationCreate,
     TimelineResponse,
     TimelineEventItem,
+    ThresholdAlertCreate,
+    ThresholdAlertUpdate,
+    ThresholdAlertResponse,
 )
+
 
 
 class CaseService:
@@ -51,6 +56,7 @@ class CaseService:
 
     @staticmethod
     def get_case_detail(db: Session, case_id: str) -> CaseDetailResponse:
+        CaseService.evaluate_alerts_for_case(db, case_id)
         case = CaseRepository.get_case_by_case_id(db, case_id)
         if not case:
             raise HTTPException(
@@ -155,7 +161,24 @@ class CaseService:
                 )
                 for fo in case.field_observations
             ],
+            threshold_alerts=[
+                ThresholdAlertResponse(
+                    id=ta.id,
+                    case_id=ta.case_id,
+                    metric_name=ta.metric_name,
+                    threshold_value=ta.threshold_value,
+                    comparison=ta.comparison,
+                    is_active=ta.is_active,
+                    triggered_state=ta.triggered_state,
+                    last_evaluated_val=ta.last_evaluated_val,
+                    last_triggered_at=ta.last_triggered_at,
+                    created_at=ta.created_at,
+                    updated_at=ta.updated_at,
+                )
+                for ta in case.threshold_alerts
+            ],
         )
+
 
     @staticmethod
     def get_evidence(db: Session, case_id: str) -> List[EvidenceResponse]:
@@ -357,4 +380,166 @@ class CaseService:
             source_type=getattr(obs, "source_type", "human_observation") or "human_observation",
             source="HUMAN_OBSERVATION",
             created_at=obs.created_at,
+        )
+
+    @staticmethod
+    def evaluate_alerts_for_case(db: Session, case_id: str):
+        case = CaseRepository.get_case_by_case_id(db, case_id)
+        if not case or not case.threshold_alerts:
+            return
+
+        latest_nisar = case.nisar_measurements[0] if case.nisar_measurements else None
+        if not latest_nisar:
+            return
+
+        now = datetime.now(timezone.utc)
+        for alert in case.threshold_alerts:
+            if not alert.is_active:
+                continue
+
+            val: Optional[float] = None
+            if alert.metric_name == "delta_backscatter":
+                val = latest_nisar.delta_backscatter
+            elif alert.metric_name == "affected_area":
+                val = latest_nisar.affected_area
+
+            if val is None:
+                continue
+
+            crossed = False
+            if alert.comparison == "less_than":
+                crossed = val <= alert.threshold_value
+            elif alert.comparison == "greater_than":
+                crossed = val >= alert.threshold_value
+            elif alert.comparison == "abs_greater_than":
+                crossed = abs(val) >= abs(alert.threshold_value)
+
+            if crossed:
+                if alert.triggered_state != "TRIGGERED":
+                    CaseRepository.update_alert(
+                        db,
+                        alert.id,
+                        triggered_state="TRIGGERED",
+                        last_evaluated_val=val,
+                        last_triggered_at=now,
+                    )
+                else:
+                    CaseRepository.update_alert(
+                        db,
+                        alert.id,
+                        last_evaluated_val=val,
+                    )
+            else:
+                if alert.triggered_state == "TRIGGERED":
+                    CaseRepository.update_alert(
+                        db,
+                        alert.id,
+                        triggered_state="ARMED",
+                        last_evaluated_val=val,
+                    )
+                else:
+                    CaseRepository.update_alert(
+                        db,
+                        alert.id,
+                        last_evaluated_val=val,
+                    )
+
+    @staticmethod
+    def get_alerts_for_case(db: Session, case_id: str) -> List[ThresholdAlertResponse]:
+        CaseService.evaluate_alerts_for_case(db, case_id)
+        alerts = CaseRepository.get_alerts_for_case(db, case_id)
+        if alerts is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+        return [
+            ThresholdAlertResponse(
+                id=a.id,
+                case_id=a.case_id,
+                metric_name=a.metric_name,
+                threshold_value=a.threshold_value,
+                comparison=a.comparison,
+                is_active=a.is_active,
+                triggered_state=a.triggered_state,
+                last_evaluated_val=a.last_evaluated_val,
+                last_triggered_at=a.last_triggered_at,
+                created_at=a.created_at,
+                updated_at=a.updated_at,
+            )
+            for a in alerts
+        ]
+
+    @staticmethod
+    def create_or_update_alert(
+        db: Session, case_id: str, payload: ThresholdAlertCreate
+    ) -> ThresholdAlertResponse:
+        alert = CaseRepository.create_or_update_alert(
+            db=db,
+            case_id=case_id,
+            metric_name=payload.metric_name,
+            threshold_value=payload.threshold_value,
+            comparison=payload.comparison,
+            is_active=payload.is_active,
+        )
+        if not alert:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Case with ID '{case_id}' not found",
+            )
+
+        CaseService.evaluate_alerts_for_case(db, case_id)
+        # Fetch fresh alert state
+        alerts = CaseRepository.get_alerts_for_case(db, case_id)
+        saved = next((a for a in (alerts or []) if a.id == alert.id), alert)
+
+        return ThresholdAlertResponse(
+            id=saved.id,
+            case_id=saved.case_id,
+            metric_name=saved.metric_name,
+            threshold_value=saved.threshold_value,
+            comparison=saved.comparison,
+            is_active=saved.is_active,
+            triggered_state=saved.triggered_state,
+            last_evaluated_val=saved.last_evaluated_val,
+            last_triggered_at=saved.last_triggered_at,
+            created_at=saved.created_at,
+            updated_at=saved.updated_at,
+        )
+
+    @staticmethod
+    def update_alert(
+        db: Session, alert_id: str, payload: ThresholdAlertUpdate
+    ) -> ThresholdAlertResponse:
+        alert = CaseRepository.update_alert(
+            db=db,
+            alert_id=alert_id,
+            metric_name=payload.metric_name,
+            threshold_value=payload.threshold_value,
+            comparison=payload.comparison,
+            is_active=payload.is_active,
+            triggered_state=payload.triggered_state,
+        )
+        if not alert:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Alert with ID '{alert_id}' not found",
+            )
+
+        CaseService.evaluate_alerts_for_case(db, alert.case_id)
+        alerts = CaseRepository.get_alerts_for_case(db, alert.case_id)
+        saved = next((a for a in (alerts or []) if a.id == alert_id), alert)
+
+        return ThresholdAlertResponse(
+            id=saved.id,
+            case_id=saved.case_id,
+            metric_name=saved.metric_name,
+            threshold_value=saved.threshold_value,
+            comparison=saved.comparison,
+            is_active=saved.is_active,
+            triggered_state=saved.triggered_state,
+            last_evaluated_val=saved.last_evaluated_val,
+            last_triggered_at=saved.last_triggered_at,
+            created_at=saved.created_at,
+            updated_at=saved.updated_at,
         )

@@ -1,9 +1,67 @@
 import io
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+import geoalchemy2.admin
+import shapely.wkt
+
 from app.main import app
-from app.core.database import Base, engine, SessionLocal
+from app.core.database import Base, get_db
 from app.core.seed import seed_initial_cases
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
+def mock_geom_from_ewkt(val):
+    if not val:
+        return None
+    wkt_str = str(val).split(";")[-1]
+    try:
+        return shapely.wkt.loads(wkt_str).wkb_hex
+    except Exception:
+        return str(val)
+
+@event.listens_for(engine, "connect")
+def connect(dbapi_connection, connection_record):
+    dbapi_connection.create_function("GeomFromEWKT", 1, mock_geom_from_ewkt)
+    dbapi_connection.create_function("GeomFromWKT", 1, mock_geom_from_ewkt)
+    dbapi_connection.create_function("GeomFromText", 1, mock_geom_from_ewkt)
+    dbapi_connection.create_function("ST_AsBinary", 1, lambda val: val)
+    dbapi_connection.create_function("ST_GeomFromText", 1, mock_geom_from_ewkt)
+    dbapi_connection.create_function("ST_GeomFromWKT", 1, mock_geom_from_ewkt)
+    dbapi_connection.create_function("AsEWKB", 1, lambda val: val)
+    dbapi_connection.create_function("AsText", 1, lambda val: val)
+    dbapi_connection.create_function("PostGIS_Full_Version", 0, lambda: "POSTGIS 3.4.0")
+
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_test_db():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = TestingSessionLocal()
+
+    def override_get_db():
+        try:
+            yield db
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    seed_initial_cases(db)
+
+    yield db
+
+    db.close()
+    Base.metadata.drop_all(bind=engine)
+    app.dependency_overrides.clear()
 
 client = TestClient(app)
 
@@ -14,14 +72,6 @@ TINY_PNG_BYTES = (
     b"\x02\x00\x01Hh\x8e\xd9\x00\x00\x00\x00IEND\xaeB`\x82"
 )
 
-
-@pytest.fixture(autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    seed_initial_cases(db)
-    db.close()
-    yield
 
 
 def test_multipart_photo_upload_field_observation():

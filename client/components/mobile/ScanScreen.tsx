@@ -16,7 +16,10 @@ import {
   Share2,
   ShieldCheck,
   Check,
+  BellRing,
+  Bell,
 } from 'lucide-react';
+import { ThresholdAlertModal } from '@/components/mobile/ThresholdAlertModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,6 +59,7 @@ export function ScanScreen({
   const [apiError, setApiError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   // 1. Fetch case list on mount
@@ -152,6 +156,10 @@ export function ScanScreen({
       return null;
     }
     return caseDetail.nisar_measurements[0];
+  }, [caseDetail]);
+
+  const hasTriggeredAlert = useMemo(() => {
+    return caseDetail?.threshold_alerts?.some((a) => a.is_active && a.triggered_state === 'TRIGGERED');
   }, [caseDetail]);
 
   const handleShareCaseLink = () => {
@@ -306,6 +314,21 @@ export function ScanScreen({
               </span>
 
               <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAlertModalOpen(true)}
+                  className={`h-6 text-[10px] px-2 gap-1 ${
+                    hasTriggeredAlert
+                      ? 'border-amber-500/50 text-amber-500 bg-amber-500/10 animate-pulse font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="Configure Anomaly Threshold Alert"
+                >
+                  <BellRing className="h-3 w-3" />
+                  {hasTriggeredAlert ? 'EXCEEDED' : 'Alert'}
+                </Button>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -568,6 +591,19 @@ export function ScanScreen({
           </div>
         </div>
       )}
+      {/* SECTION 8: THRESHOLD ALERT MODAL */}
+      <ThresholdAlertModal
+        isOpen={isAlertModalOpen}
+        onClose={() => setIsAlertModalOpen(false)}
+        caseId={selectedCaseId}
+        currentDeltaBackscatter={primaryNisarMeasurement?.delta_backscatter}
+        currentAffectedArea={primaryNisarMeasurement?.affected_area}
+        onAlertSaved={() => {
+          if (selectedCaseId) {
+            fetchCaseDetail(selectedCaseId).then(setCaseDetail).catch(() => null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ from app.models.case import (
     Provenance,
     FieldObservation,
     ChallengeCheck,
+    ThresholdAlert,
 )
 
 
@@ -42,9 +43,11 @@ class CaseRepository:
                 joinedload(Case.interpretations),
                 joinedload(Case.provenance_records),
                 joinedload(Case.field_observations),
+                joinedload(Case.threshold_alerts),
             )
         )
         return db.scalars(stmt).unique().first()
+
 
     @staticmethod
     def get_evidence_for_case(db: Session, case_id: str) -> Optional[List[Evidence]]:
@@ -115,4 +118,91 @@ class CaseRepository:
         db.refresh(field_obs)
         return field_obs
 
+    @staticmethod
+    def get_alerts_for_case(db: Session, case_id: str) -> Optional[List[ThresholdAlert]]:
+        case_exists = db.scalar(select(Case.id).where(Case.case_id == case_id))
+        if not case_exists:
+            return None
+        stmt = (
+            select(ThresholdAlert)
+            .where(ThresholdAlert.case_id == case_id)
+            .order_by(ThresholdAlert.created_at.desc())
+        )
+        return list(db.scalars(stmt).all())
 
+    @staticmethod
+    def create_or_update_alert(
+        db: Session,
+        case_id: str,
+        metric_name: str,
+        threshold_value: float,
+        comparison: str = "less_than",
+        is_active: bool = True,
+    ) -> Optional[ThresholdAlert]:
+        case_exists = db.scalar(select(Case.id).where(Case.case_id == case_id))
+        if not case_exists:
+            return None
+
+        # Check if alert already exists for this case + metric
+        stmt = select(ThresholdAlert).where(
+            ThresholdAlert.case_id == case_id,
+            ThresholdAlert.metric_name == metric_name,
+        )
+        existing = db.scalars(stmt).first()
+
+        if existing:
+            existing.threshold_value = threshold_value
+            existing.comparison = comparison
+            existing.is_active = is_active
+            db.commit()
+            db.refresh(existing)
+            return existing
+        else:
+            alert = ThresholdAlert(
+                case_id=case_id,
+                metric_name=metric_name,
+                threshold_value=threshold_value,
+                comparison=comparison,
+                is_active=is_active,
+                triggered_state="ARMED",
+            )
+            db.add(alert)
+            db.commit()
+            db.refresh(alert)
+            return alert
+
+    @staticmethod
+    def update_alert(
+        db: Session,
+        alert_id: str,
+        metric_name: Optional[str] = None,
+        threshold_value: Optional[float] = None,
+        comparison: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        triggered_state: Optional[str] = None,
+        last_evaluated_val: Optional[float] = None,
+        last_triggered_at: Optional[datetime] = None,
+    ) -> Optional[ThresholdAlert]:
+        stmt = select(ThresholdAlert).where(ThresholdAlert.id == alert_id)
+        alert = db.scalars(stmt).first()
+        if not alert:
+            return None
+
+        if metric_name is not None:
+            alert.metric_name = metric_name
+        if threshold_value is not None:
+            alert.threshold_value = threshold_value
+        if comparison is not None:
+            alert.comparison = comparison
+        if is_active is not None:
+            alert.is_active = is_active
+        if triggered_state is not None:
+            alert.triggered_state = triggered_state
+        if last_evaluated_val is not None:
+            alert.last_evaluated_val = last_evaluated_val
+        if last_triggered_at is not None:
+            alert.last_triggered_at = last_triggered_at
+
+        db.commit()
+        db.refresh(alert)
+        return alert

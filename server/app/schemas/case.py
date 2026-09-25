@@ -141,6 +141,37 @@ class TimelineResponse(BaseModel):
     events: List[TimelineEventItem]
 
 
+class ThresholdAlertCreate(BaseModel):
+    metric_name: str = "delta_backscatter"
+    threshold_value: float = -2.0
+    comparison: str = "less_than"
+    is_active: bool = True
+
+
+class ThresholdAlertUpdate(BaseModel):
+    metric_name: Optional[str] = None
+    threshold_value: Optional[float] = None
+    comparison: Optional[str] = None
+    is_active: Optional[bool] = None
+    triggered_state: Optional[str] = None
+
+
+class ThresholdAlertResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    case_id: str
+    metric_name: str
+    threshold_value: float
+    comparison: str
+    is_active: bool
+    triggered_state: str
+    last_evaluated_val: Optional[float] = None
+    last_triggered_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+
 class CaseDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -159,3 +190,4 @@ class CaseDetailResponse(BaseModel):
     interpretations: List[InterpretationResponse] = []
     provenance_records: List[ProvenanceResponse] = []
     field_observations: List[FieldObservationResponse] = []
+    threshold_alerts: List[ThresholdAlertResponse] = []

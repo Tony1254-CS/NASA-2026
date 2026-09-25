@@ -124,6 +124,27 @@ export interface FieldObservationCreatePayload {
   longitude: number;
 }
 
+export interface ThresholdAlertResponse {
+  id: string;
+  case_id: string;
+  metric_name: string;
+  threshold_value: number;
+  comparison: string;
+  is_active: boolean;
+  triggered_state: 'ARMED' | 'TRIGGERED';
+  last_evaluated_val?: number | null;
+  last_triggered_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ThresholdAlertCreatePayload {
+  metric_name?: string;
+  threshold_value: number;
+  comparison?: string;
+  is_active?: boolean;
+}
+
 export interface CaseDetailResponse {
   id: string;
   case_id: string;
@@ -140,6 +161,7 @@ export interface CaseDetailResponse {
   interpretations: InterpretationResponse[];
   provenance_records: ProvenanceResponse[];
   field_observations: FieldObservationResponse[];
+  threshold_alerts?: ThresholdAlertResponse[];
 }
 
 export interface TimelineEventItem {
@@ -286,3 +308,73 @@ export async function createFieldObservation(
   return res.json();
 }
 
+/**
+ * Fetch threshold alerts configured for a specific case ID
+ */
+export async function fetchCaseAlerts(caseId: string): Promise<ThresholdAlertResponse[]> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/alerts`);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} failed to fetch case alerts`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Configure or update a threshold alert for a specific case ID
+ */
+export async function createCaseAlert(
+  caseId: string,
+  payload: ThresholdAlertCreatePayload
+): Promise<ThresholdAlertResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/alerts`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `HTTP ${res.status} failed to save threshold alert`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Update an existing threshold alert (e.g. toggle active state, change threshold value)
+ */
+export async function updateCaseAlert(
+  caseId: string,
+  alertId: string,
+  payload: Partial<ThresholdAlertCreatePayload> & { triggered_state?: string }
+): Promise<ThresholdAlertResponse> {
+  const url = getApiUrl(`/api/cases/${encodeURIComponent(caseId)}/alerts/${encodeURIComponent(alertId)}`);
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `HTTP ${res.status} failed to update threshold alert`);
+  }
+
+  return res.json();
+}
