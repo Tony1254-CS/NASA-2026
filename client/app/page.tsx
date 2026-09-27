@@ -5,23 +5,22 @@ import { fetchHealthStatus } from '@/lib/api';
 import { useGeolocation } from '@/lib/useGeolocation';
 import { MobileHeader } from '@/components/mobile/MobileHeader';
 import { MobileNav, type MobileTab } from '@/components/mobile/MobileNav';
-import { ScanScreen } from '@/components/mobile/ScanScreen';
+import { ScanScreen, type MobileScanView } from '@/components/mobile/ScanScreen';
 import { FeelScreen } from '@/components/mobile/FeelScreen';
 import { VerifyScreen } from '@/components/mobile/VerifyScreen';
 import { GlobalPulseView } from '@/components/scientific/GlobalPulseView';
 import { CharGuardianView } from '@/components/scientific/CharGuardianView';
-
 import { HeroMissionHeader } from '@/components/mobile/HeroMissionHeader';
 
 export default function HomePage() {
   const { status: locationStatus } = useGeolocation();
   const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
-  const [activeTab, setActiveTab] = useState<MobileTab>('scan');
+  const [activeTab, setActiveTab] = useState<MobileTab>('overview');
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
 
   const handleSelectCaseFromPulse = (caseId: string) => {
     setCurrentCaseId(caseId);
-    setActiveTab('scan');
+    setActiveTab('overview');
   };
 
   useEffect(() => {
@@ -44,19 +43,36 @@ export default function HomePage() {
     };
   }, []);
 
+  const isScanScreenView =
+    activeTab === 'scan' ||
+    activeTab === 'overview' ||
+    activeTab === 'signals' ||
+    activeTab === 'payloads' ||
+    activeTab === 'timeline';
+
+  const currentMobileScanView: MobileScanView =
+    activeTab === 'signals' || activeTab === 'payloads' || activeTab === 'timeline'
+      ? activeTab
+      : 'overview';
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-primary/20">
-      {/* TRACE FIELD Header */}
+    <div className="min-h-screen bg-[#060911] text-foreground flex flex-col antialiased selection:bg-primary/20 overflow-x-hidden">
+      {/* 6. TRACE FIELD Header */}
       <MobileHeader locationStatus={locationStatus} serverStatus={serverStatus} />
 
       {/* Main Content Area */}
       <main className="flex-1 pt-2 pb-20 space-y-2">
-        {activeTab === 'scan' && (
+        {isScanScreenView && (
           <>
-            {/* Mission Control Hero Explanation & Module Cards — HOME DISCOVERY ONLY */}
-            <HeroMissionHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            {/* Mission Control Hero Explanation & Module Cards — Desktop Only to prevent mobile scrolling */}
+            <div className="hidden md:block">
+              <HeroMissionHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
+
             <ScanScreen
               overrideCaseId={currentCaseId}
+              currentMobileView={currentMobileScanView}
+              onMobileViewChange={(v) => setActiveTab(v)}
               onNavigateToFeel={() => setActiveTab('feel')}
               onNavigateToVerify={() => setActiveTab('verify')}
             />
@@ -84,12 +100,12 @@ export default function HomePage() {
         {activeTab === 'verify' && (
           <VerifyScreen
             initialCaseId={currentCaseId}
-            onSuccess={() => setActiveTab('scan')}
+            onSuccess={() => setActiveTab('overview')}
           />
         )}
       </main>
 
-      {/* TRACE FIELD Navigation */}
+      {/* 12. TRACE FIELD Navigation */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );

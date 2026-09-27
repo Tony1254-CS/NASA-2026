@@ -182,3 +182,41 @@
   background: rgba(56, 189, 248, 0.45);
 }
 
+/* LEAFLET GEOGRAPHIC MAP OVERRIDES */
+.leaflet-container {
+  background-color: #050914 !important;
+  font-family: inherit;
+}
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+}
+.leaflet-control-attribution {
+  background: rgba(5, 9, 20, 0.75) !important;
+  color: #64748b !important;
+  font-family: monospace;
+  font-size: 8px !important;
+  border-top-left-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-bottom: none;
+  border-right: none;
+}
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+  text-decoration: none;
+}
+.leaflet-control-attribution a:hover {
+  text-decoration: underline;
+}
+.trace-custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* DARK SCI-FI STYLING FOR OPENSTREETMAP TILES */
+.trace-osm-dark-tiles .leaflet-tile {
+  filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(90%);
+  -webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(90%);
+}
+
+

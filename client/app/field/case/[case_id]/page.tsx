@@ -5,7 +5,7 @@ import { fetchHealthStatus } from '@/lib/api';
 import { useGeolocation } from '@/lib/useGeolocation';
 import { MobileHeader } from '@/components/mobile/MobileHeader';
 import { MobileNav, type MobileTab } from '@/components/mobile/MobileNav';
-import { ScanScreen } from '@/components/mobile/ScanScreen';
+import { ScanScreen, type MobileScanView } from '@/components/mobile/ScanScreen';
 import { FeelScreen } from '@/components/mobile/FeelScreen';
 import { VerifyScreen } from '@/components/mobile/VerifyScreen';
 
@@ -19,7 +19,7 @@ export default function DeepLinkCasePage({ params }: PageProps) {
 
   const { status: locationStatus } = useGeolocation();
   const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
-  const [activeTab, setActiveTab] = useState<MobileTab>('scan');
+  const [activeTab, setActiveTab] = useState<MobileTab>('overview');
 
   useEffect(() => {
     let isMounted = true;
@@ -36,19 +36,39 @@ export default function DeepLinkCasePage({ params }: PageProps) {
     };
   }, []);
 
+  const isScanScreenView =
+    activeTab === 'scan' ||
+    activeTab === 'overview' ||
+    activeTab === 'signals' ||
+    activeTab === 'payloads' ||
+    activeTab === 'timeline';
+
+  const currentMobileScanView: MobileScanView =
+    activeTab === 'signals' || activeTab === 'payloads' || activeTab === 'timeline'
+      ? activeTab
+      : 'overview';
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col antialiased selection:bg-primary/20">
+    <div className="min-h-screen bg-[#060911] text-foreground flex flex-col antialiased selection:bg-primary/20 overflow-x-hidden">
       {/* Header */}
       <MobileHeader locationStatus={locationStatus} serverStatus={serverStatus} />
 
       {/* Main Tab Content */}
-      <main className="flex-1 pt-4 pb-20">
-        {activeTab === 'scan' && <ScanScreen overrideCaseId={caseId} />}
+      <main className="flex-1 pt-2 pb-20">
+        {isScanScreenView && (
+          <ScanScreen
+            overrideCaseId={caseId}
+            currentMobileView={currentMobileScanView}
+            onMobileViewChange={(v) => setActiveTab(v)}
+            onNavigateToFeel={() => setActiveTab('feel')}
+            onNavigateToVerify={() => setActiveTab('verify')}
+          />
+        )}
         {activeTab === 'feel' && (
           <FeelScreen initialCaseId={caseId} onNavigateToVerify={() => setActiveTab('verify')} />
         )}
         {activeTab === 'verify' && (
-          <VerifyScreen initialCaseId={caseId} onSuccess={() => setActiveTab('scan')} />
+          <VerifyScreen initialCaseId={caseId} onSuccess={() => setActiveTab('overview')} />
         )}
       </main>
 

@@ -6,6 +6,7 @@ export interface LocationCoordinates {
   latitude: number;
   longitude: number;
   accuracy?: number;
+  placeName?: string | null;
 }
 
 export type LocationStatus = 'prompt' | 'loading' | 'granted' | 'denied' | 'unavailable';
@@ -15,6 +16,56 @@ export interface UseGeolocationReturn {
   status: LocationStatus;
   error: string | null;
   requestLocation: () => void;
+}
+
+/**
+ * Reverse geocodes coordinates to a human-readable place name (e.g., "Dhaka, Bangladesh").
+ */
+export async function fetchPlaceName(latitude: number, longitude: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const parts: string[] = [];
+      if (data.city || data.locality) {
+        parts.push(data.city || data.locality);
+      } else if (data.principalSubdivision) {
+        parts.push(data.principalSubdivision);
+      }
+      if (data.countryName) {
+        parts.push(data.countryName);
+      }
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+    }
+  } catch {
+    // Fall back to Nominatim
+  }
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      { headers: { Accept: 'application/json' } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address;
+      if (addr) {
+        const city = addr.city || addr.town || addr.village || addr.county || addr.state;
+        const country = addr.country;
+        if (city && country) return `${city}, ${country}`;
+        if (city) return city;
+        if (country) return country;
+      }
+    }
+  } catch {
+    // Graceful fallback
+  }
+
+  return null;
 }
 
 /**
@@ -91,13 +142,24 @@ export function useGeolocation(): UseGeolocationReturn {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
+        const coords: LocationCoordinates = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
-        });
+          placeName: null,
+        };
+        setLocation(coords);
         setStatus('granted');
         setError(null);
+
+        // Asynchronously resolve human-readable place name
+        fetchPlaceName(position.coords.latitude, position.coords.longitude)
+          .then((name) => {
+            if (name) {
+              setLocation((prev) => (prev ? { ...prev, placeName: name } : prev));
+            }
+          })
+          .catch(() => {});
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {

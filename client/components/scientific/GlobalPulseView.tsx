@@ -17,7 +17,21 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { fetchGlobalEvents, type GlobalEventItem } from '@/lib/api';
+import dynamic from 'next/dynamic';
+import { fetchGlobalEvents, fetchCaseDetail, type GlobalEventItem, type CaseDetailResponse } from '@/lib/api';
+
+const PlanetaryRealMap = dynamic(
+  () => import('@/components/scientific/PlanetaryRealMap').then((mod) => mod.PlanetaryRealMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[320px] sm:h-[380px] md:h-[420px] bg-[#050914] flex flex-col items-center justify-center p-6 text-center space-y-2 font-mono">
+        <Radar className="w-6 h-6 text-sky-400 animate-spin" />
+        <span className="text-xs text-slate-300">INITIALIZING PLANETARY GEOGRAPHIC BASEMAP...</span>
+      </div>
+    ),
+  }
+);
 
 interface GlobalPulseViewProps {
   onSelectCase?: (caseId: string) => void;
@@ -26,6 +40,7 @@ interface GlobalPulseViewProps {
 export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
   const [events, setEvents] = useState<GlobalEventItem[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseDetail, setSelectedCaseDetail] = useState<CaseDetailResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +68,26 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
   useEffect(() => {
     loadGlobalEvents();
   }, [filterEventType, filterAuditVerdict]);
+
+  useEffect(() => {
+    if (!selectedCaseId) {
+      setSelectedCaseDetail(null);
+      return;
+    }
+
+    let isMounted = true;
+    fetchCaseDetail(selectedCaseId)
+      .then((res) => {
+        if (isMounted) setSelectedCaseDetail(res);
+      })
+      .catch(() => {
+        if (isMounted) setSelectedCaseDetail(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCaseId]);
 
   const selectedEvent = events.find((e) => e.case_id === selectedCaseId) || events[0] || null;
 
@@ -89,14 +124,6 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
           </span>
         );
     }
-  };
-
-  // Convert (lat, lon) to SVG percent coordinates
-  const getMarkerCoords = (lat?: number | null, lon?: number | null) => {
-    if (lat == null || lon == null) return null;
-    const x = ((lon + 180) / 360) * 100;
-    const y = ((90 - lat) / 180) * 100;
-    return { x: Math.max(5, Math.min(95, x)), y: Math.max(5, Math.min(95, y)) };
   };
 
   return (
@@ -171,7 +198,7 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
         </span>
       </div>
 
-      {/* PLANETARY SVG MAP */}
+      {/* PLANETARY REAL INTERACTIVE GEOGRAPHIC MAP */}
       <Card className="bg-slate-950/80 border-sky-500/25 overflow-hidden shadow-2xl relative">
         <CardHeader className="p-4 sm:p-5 pb-2 border-b border-sky-500/20 flex flex-row items-center justify-between bg-slate-900/40">
           <CardTitle className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -182,70 +209,14 @@ export function GlobalPulseView({ onSelectCase }: GlobalPulseViewProps) {
             WGS84 Equirectangular Grid
           </span>
         </CardHeader>
-        <CardContent className="p-0 relative min-h-[300px] bg-[#050914] flex items-center justify-center">
-          {/* World Grid SVG Background */}
-          <svg className="w-full h-full min-h-[300px] opacity-35 pointer-events-none" viewBox="0 0 800 400" fill="none">
-            <line x1="0" y1="200" x2="800" y2="200" stroke="#38bdf8" strokeDasharray="4 4" strokeWidth="0.8" opacity="0.4" />
-            <line x1="400" y1="0" x2="400" y2="400" stroke="#38bdf8" strokeDasharray="4 4" strokeWidth="0.8" opacity="0.4" />
-            <rect x="50" y="30" width="700" height="340" stroke="#1e293b" strokeWidth="1" fill="none" />
-            <path d="M150,120 Q200,90 280,110 T320,180 L250,220 Z" fill="#0f172a" stroke="#1e293b" opacity="0.8" />
-            <path d="M420,100 Q500,80 620,120 T680,200 L550,260 Z" fill="#0f172a" stroke="#1e293b" opacity="0.8" />
-            <path d="M450,220 Q500,240 520,300 T480,340 Z" fill="#0f172a" stroke="#1e293b" opacity="0.8" />
-          </svg>
-
-          {/* REAL CASE MARKERS */}
-          {!loading && events.length > 0 && (
-            <div className="absolute inset-0 p-4">
-              {events.map((evt) => {
-                const coords = getMarkerCoords(evt.latitude, evt.longitude);
-                if (!coords) return null;
-                const isSelected = evt.case_id === selectedCaseId;
-
-                return (
-                  <button
-                    key={evt.case_id}
-                    onClick={() => setSelectedCaseId(evt.case_id)}
-                    style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 z-10 ${
-                      isSelected ? 'scale-125 z-20' : 'hover:scale-110'
-                    }`}
-                    title={`${evt.case_id} (${evt.event_type})`}
-                  >
-                    <div className="relative group">
-                      {isSelected && (
-                        <span className="absolute -inset-2 rounded-full bg-sky-400/30 animate-ping pointer-events-none" />
-                      )}
-                      <span
-                        className={`block w-4.5 h-4.5 rounded-full border-2 shadow-[0_0_12px_rgba(0,0,0,0.8)] ${
-                          evt.audit_verdict === 'SUPPORTED'
-                            ? 'bg-emerald-500 border-emerald-300 shadow-emerald-500/50'
-                            : evt.audit_verdict === 'REJECTED'
-                            ? 'bg-rose-500 border-rose-300 shadow-rose-500/50'
-                            : 'bg-amber-500 border-amber-300 shadow-amber-500/50'
-                        } ${isSelected ? 'ring-4 ring-sky-400/60' : ''}`}
-                      />
-                      <span className="absolute left-1/2 -translate-x-1/2 top-6 whitespace-nowrap text-[9px] font-mono font-bold bg-slate-950/90 text-sky-300 px-2 py-0.5 rounded border border-sky-500/30 shadow-lg pointer-events-none">
-                        {evt.case_id}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* EMPTY STATE */}
-          {!loading && events.length === 0 && (
-            <div className="absolute inset-0 min-h-[300px] flex flex-col items-center justify-center p-6 text-center space-y-3 z-10 max-w-sm mx-auto">
-              <AlertTriangle className="w-8 h-8 text-amber-400 shrink-0" />
-              <h3 className="text-sm font-semibold text-slate-300 font-mono">
-                {filterAuditVerdict === 'SUPPORTED' ? 'No supported TRACE events available.' : 'No TRACE events available.'}
-              </h3>
-              <p className="text-xs text-slate-400 leading-normal">
-                No active satellite investigation cases match the selected pulse filters.
-              </p>
-            </div>
-          )}
+        <CardContent className="p-0 relative">
+          <PlanetaryRealMap
+            events={events}
+            selectedCaseId={selectedCaseId}
+            onSelectCase={(caseId) => setSelectedCaseId(caseId)}
+            caseGeometry={selectedCaseDetail?.geometry}
+            loading={loading}
+          />
         </CardContent>
       </Card>
 

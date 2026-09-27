@@ -82,8 +82,38 @@ export function EnhancedEventTimeline({ timeline, observationStart, observationE
                     <span>{new Date(item.timestamp).toUTCString()}</span>
                   </div>
                   {item.details && Object.keys(item.details).length > 0 && (
-                    <div className="text-[10px] font-mono text-slate-400 pt-1.5 border-t border-sky-500/15 mt-1.5 break-words whitespace-pre-wrap overflow-hidden">
-                      {JSON.stringify(item.details, null, 2)}
+                    <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-sky-500/15 mt-1.5">
+                      {Object.entries(item.details).map(([k, v]) => {
+                        const label = k
+                          .replace(/_/g, ' ')
+                          .replace(/\b\w/g, (c) => c.toUpperCase());
+                        let displayVal = String(v);
+                        if (typeof v === 'number') {
+                          if (k.includes('backscatter') || k.includes('delta')) {
+                            displayVal = `${v > 0 ? '+' : ''}${v.toFixed(2)} dB`;
+                          } else if (k.includes('area')) {
+                            displayVal = `${v.toFixed(1)} sq km`;
+                          }
+                        } else if (typeof v === 'string' && (k.includes('time') || k.includes('date'))) {
+                          const parsed = new Date(v);
+                          if (!isNaN(parsed.getTime())) {
+                            displayVal = parsed.toUTCString();
+                          }
+                        }
+                        return (
+                          <div
+                            key={k}
+                            className="bg-slate-900/80 p-1.5 rounded-lg border border-sky-500/10 space-y-0.5"
+                          >
+                            <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block truncate">
+                              {label}
+                            </span>
+                            <span className="text-[11px] font-mono font-bold text-sky-300 block truncate">
+                              {displayVal}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

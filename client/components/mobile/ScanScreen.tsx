@@ -17,7 +17,9 @@ import {
   ShieldCheck,
   Check,
   BellRing,
-  Bell,
+  Clock,
+  Radio,
+  Crosshair,
 } from 'lucide-react';
 import { ThresholdAlertModal } from '@/components/mobile/ThresholdAlertModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -35,22 +37,28 @@ import {
   type CaseDetailResponse,
   type TimelineResponse,
 } from '@/lib/api';
-import { EvidenceConfidenceWall } from '@/components/scientific/EvidenceConfidenceWall';
-import { ChangeLensesView } from '@/components/scientific/ChangeLensesView';
-import { OpticalSarSwipeComparison, isBrowserRenderableImageUri } from '@/components/scientific/OpticalSarSwipeComparison';
-import { EnhancedEventTimeline } from '@/components/scientific/EnhancedEventTimeline';
+import { OverviewView } from '@/components/mobile/OverviewView';
+import { SignalsView } from '@/components/mobile/SignalsView';
+import { PayloadAuditView } from '@/components/mobile/PayloadAuditView';
+import { TimelineView } from '@/components/mobile/TimelineView';
+import { isBrowserRenderableImageUri } from '@/components/scientific/OpticalSarSwipeComparison';
 
+export type MobileScanView = 'overview' | 'signals' | 'payloads' | 'timeline';
 
 interface ScanScreenProps {
   overrideCaseId?: string | null;
   onNavigateToFeel?: () => void;
   onNavigateToVerify?: () => void;
+  currentMobileView?: MobileScanView;
+  onMobileViewChange?: (view: MobileScanView) => void;
 }
 
 export function ScanScreen({
   overrideCaseId,
   onNavigateToFeel,
   onNavigateToVerify,
+  currentMobileView,
+  onMobileViewChange,
 }: ScanScreenProps) {
   const { location, status: locationStatus, error: locationError, requestLocation } = useGeolocation();
 
@@ -66,6 +74,16 @@ export function ScanScreen({
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+
+  // Local segmented tab state (defaults to 'overview')
+  const [localActiveView, setLocalActiveView] = useState<MobileScanView>('overview');
+
+  const activeView = currentMobileView || localActiveView;
+
+  const handleViewChange = (view: MobileScanView) => {
+    setLocalActiveView(view);
+    onMobileViewChange?.(view);
+  };
 
   // 1. Fetch case list on mount
   const loadCaseList = async () => {
@@ -213,7 +231,7 @@ export function ScanScreen({
   }, [caseDetail, primaryNisarMeasurement]);
 
   const hasTriggeredAlert = useMemo(() => {
-    return caseDetail?.threshold_alerts?.some((a) => a.is_active && a.triggered_state === 'TRIGGERED');
+    return caseDetail?.threshold_alerts?.some((a) => a.is_active && a.triggered_state === 'TRIGGERED') || false;
   }, [caseDetail]);
 
   const handleShareCaseLink = () => {
@@ -226,111 +244,38 @@ export function ScanScreen({
     }
   };
 
+  const navSegments: Array<{ id: MobileScanView; label: string; icon: React.ElementType }> = [
+    { id: 'overview', label: 'OVERVIEW', icon: Crosshair },
+    { id: 'signals', label: 'SIGNALS', icon: Activity },
+    { id: 'payloads', label: 'PAYLOADS', icon: Layers },
+    { id: 'timeline', label: 'TIMELINE', icon: Calendar },
+  ];
+
   return (
-    <div className="space-y-4 pb-20 max-w-md mx-auto px-4">
-      {/* SECTION 1: LOCATION STATUS CARD */}
-      <Card className="glass-panel border-sky-500/20 shadow-md relative overflow-hidden">
-        <div className="tech-corner-tl" />
-        <div className="tech-corner-tr" />
-
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded bg-sky-500/10 border border-sky-400/30 text-sky-400">
-                <MapPin className="h-3.5 w-3.5" />
-              </div>
-              <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-300">
-                Device Location Lock
-              </span>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={requestLocation}
-              disabled={locationStatus === 'loading'}
-              className="h-7 text-xs font-mono border-sky-500/30 text-sky-300 hover:bg-sky-500/15 px-2.5 gap-1.5"
+    <div className="space-y-3 pb-24 max-w-md md:max-w-4xl mx-auto px-3 sm:px-4">
+      {/* 5. MOBILE SEGMENTED VIEW CONTROLS */}
+      <div className="glass-panel border-sky-500/25 p-1 rounded-xl shadow-lg flex items-center justify-between gap-1 relative overflow-hidden">
+        {navSegments.map((seg) => {
+          const Icon = seg.icon;
+          const isActive = activeView === seg.id;
+          return (
+            <button
+              key={seg.id}
+              onClick={() => handleViewChange(seg.id)}
+              className={`flex-1 py-1.5 px-1 rounded-lg text-center font-mono font-bold text-[10px] tracking-wider uppercase transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                isActive
+                  ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.35)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
             >
-              <RefreshCw className={`h-3 w-3 ${locationStatus === 'loading' ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-
-          {/* Location Status Message */}
-          {locationStatus === 'loading' && (
-            <p className="text-xs font-mono text-amber-400 font-medium animate-pulse flex items-center gap-1.5">
-              <Compass className="h-3.5 w-3.5 animate-spin" />
-              ACQUIRING GPS SATELLITE LOCK...
-            </p>
-          )}
-
-          {locationStatus === 'granted' && location && (
-            <div className="flex items-center justify-between bg-slate-950/70 rounded-lg p-2.5 border border-sky-500/20 shadow-inner">
-              <div className="space-y-0.5">
-                <p className="text-xs font-mono font-bold text-sky-300 tracking-tight">
-                  {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
-                </p>
-
-                <p className="text-[10px] font-mono text-slate-400">
-                  Accuracy: ±{Math.round(location.accuracy || 0)}m
-                </p>
-              </div>
-
-              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
-                <CheckCircle2 className="h-3 w-3" />
-                ACTIVE
-              </span>
-            </div>
-          )}
-
-          {locationStatus === 'denied' && (
-            <div className="text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg p-2.5 space-y-1">
-              <p className="font-semibold font-mono text-[11px] flex items-center gap-1">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                GPS PERMISSION DENIED
-              </p>
-              <p className="text-[11px] text-slate-400 leading-normal">
-                Showing selected TRACE investigation. Grant GPS permission to auto-detect nearby cases.
-              </p>
-            </div>
-          )}
-
-          {locationStatus === 'unavailable' && (
-            <div className="text-xs text-slate-400 bg-slate-950/60 rounded-lg p-2.5 border border-slate-800">
-              <p className="font-mono text-[11px]">{locationError || 'GPS location unavailable.'}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* SECTION 2: CASE SELECTION */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between px-1">
-          <label className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Radar className="h-3.5 w-3.5 text-sky-400" />
-            TRACE Investigation Target
-          </label>
-          <span className="text-[10px] font-mono text-sky-400/80 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-            {cases.length} AVAILABLE
-          </span>
-        </div>
-
-        {cases.length > 0 && (
-          <select
-            value={selectedCaseId || ''}
-            onChange={(e) => setSelectedCaseId(e.target.value)}
-            className="w-full bg-slate-900/90 border border-sky-500/30 rounded-lg px-3 py-2 text-xs font-mono font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 shadow-inner"
-          >
-            {cases.map((c) => (
-              <option key={c.case_id} value={c.case_id} className="bg-slate-900 text-slate-200">
-                {c.case_id} — {c.event_type.toUpperCase()} ({c.status.toUpperCase()})
-              </option>
-            ))}
-          </select>
-        )}
+              <Icon className={`h-3 w-3 ${isActive ? 'text-slate-950 stroke-[2.5px]' : 'text-slate-400'}`} />
+              <span>{seg.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* SECTION 3: API ERROR / RETRY */}
+      {/* API ERROR / RETRY */}
       {apiError && (
         <Card className="border-rose-500/30 bg-rose-950/20 backdrop-blur-md">
           <CardContent className="p-4 text-center space-y-3">
@@ -347,7 +292,7 @@ export function ScanScreen({
         </Card>
       )}
 
-      {/* SECTION 4: LOADING SKELETON */}
+      {/* LOADING SKELETON */}
       {loadingCases && (
         <Card className="border-sky-500/20 bg-slate-950/60 backdrop-blur-md animate-pulse">
           <CardContent className="p-6 space-y-4">
@@ -361,184 +306,7 @@ export function ScanScreen({
         </Card>
       )}
 
-      {/* SECTION 5: SELECTED CASE CARD */}
-      {!loadingCases && !apiError && caseDetail && (
-        <>
-          <Card className="glass-panel border-sky-500/30 shadow-xl relative overflow-hidden">
-            <div className="tech-corner-tl" />
-            <div className="tech-corner-tr" />
-
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <CardHeader className="p-4 pb-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-extrabold text-sky-300 bg-sky-500/15 px-2.5 py-0.5 rounded border border-sky-400/30 uppercase tracking-widest shadow-[0_0_10px_rgba(56,189,248,0.2)]">
-                  CASE // {caseDetail.case_id}
-                </span>
-
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAlertModalOpen(true)}
-                    className={`h-6 text-[10px] font-mono px-2 gap-1 border-sky-500/30 ${
-                      hasTriggeredAlert
-                        ? 'border-amber-500/50 text-amber-300 bg-amber-500/20 animate-pulse font-bold'
-                        : 'text-slate-300 hover:text-white hover:bg-sky-500/15'
-                    }`}
-                    title="Configure Anomaly Threshold Alert"
-                  >
-                    <BellRing className="h-3 w-3" />
-                    {hasTriggeredAlert ? 'EXCEEDED' : 'Alert'}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleShareCaseLink}
-                    className="h-6 text-[10px] font-mono px-2 gap-1 border-sky-500/30 text-slate-300 hover:text-white hover:bg-sky-500/15"
-                    title="Copy Web ↔ Mobile Case Link"
-                  >
-                    {copiedLink ? <Check className="h-3 w-3 text-emerald-400" /> : <Share2 className="h-3 w-3 text-sky-400" />}
-                    {copiedLink ? 'Copied' : 'Share'}
-                  </Button>
-
-                  <span
-                    className={`text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                      caseDetail.status === 'active'
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(52,211,153,0.3)]'
-                        : 'bg-slate-800 text-slate-400 border-slate-700'
-                    }`}
-                  >
-                    ● {caseDetail.status}
-                  </span>
-                </div>
-              </div>
-
-              <CardTitle className="text-lg font-extrabold text-white capitalize mt-2 flex items-center gap-2 font-mono tracking-tight">
-                {caseDetail.event_type}
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-400 flex items-center gap-1 font-mono">
-                <Calendar className="h-3 w-3 text-sky-400" />
-                Start: {new Date(caseDetail.observation_start).toLocaleDateString()}
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="p-4 pt-2 space-y-4">
-              {/* GRID METRICS */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {/* NISAR CHANGE MEASUREMENT */}
-                <div className="bg-slate-950/70 border border-sky-500/20 rounded-xl p-3 space-y-1 shadow-inner relative">
-                  <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-sky-400" />
-                    NISAR Backscatter
-                  </span>
-
-                  {primaryNisarMeasurement?.delta_backscatter != null ? (
-                    <p className="text-sm font-bold font-mono text-sky-300 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]">
-                      {primaryNisarMeasurement.delta_backscatter > 0 ? '+' : ''}
-                      {primaryNisarMeasurement.delta_backscatter.toFixed(2)} dB
-                    </p>
-                  ) : (
-                    <p className="text-[11px] font-mono text-slate-400 italic">
-                      Unavailable
-                    </p>
-                  )}
-                </div>
-
-                {/* DISTANCE FROM USER */}
-                <div className="bg-slate-950/70 border border-sky-500/20 rounded-xl p-3 space-y-1 shadow-inner relative">
-                  <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    <Compass className="h-3 w-3 text-sky-400" />
-                    Distance
-                  </span>
-
-                  {distanceToUser != null ? (
-                    <p className="text-sm font-bold font-mono text-slate-200">{distanceToUser} km</p>
-                  ) : (
-                    <p className="text-[11px] font-mono text-slate-400 italic">
-                      {locationStatus === 'granted' ? 'Centroid unknown' : 'GPS off'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* QUICK ACTIONS FOR FEEL & VERIFY */}
-              <div className="grid grid-cols-2 gap-2">
-                {onNavigateToFeel && (
-                  <Button
-                    variant="outline"
-                    onClick={onNavigateToFeel}
-                    className="h-9 text-xs font-mono font-bold gap-1.5 border-sky-500/40 text-sky-300 hover:bg-sky-500/20 hover:text-white shadow-sm"
-                  >
-                    <Activity className="h-3.5 w-3.5 text-sky-400" />
-                    FEEL Signal
-                  </Button>
-                )}
-
-                {onNavigateToVerify && (
-                  <Button
-                    variant="outline"
-                    onClick={onNavigateToVerify}
-                    className="h-9 text-xs font-mono font-bold gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20 hover:text-white shadow-sm"
-                  >
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                    VERIFY Ground
-                  </Button>
-                )}
-              </div>
-
-              {/* LOCATION COORDINATES */}
-              {selectedCentroid && (
-                <div className="text-xs flex items-center justify-between border-t border-sky-500/15 pt-2 text-slate-400 font-mono">
-                  <span className="flex items-center gap-1 text-[11px]">
-                    <MapPin className="h-3 w-3 text-sky-400" />
-                    AOI Centroid:
-                  </span>
-                  <span className="text-[11px] font-bold text-sky-300">
-                    {selectedCentroid.latitude.toFixed(4)}°, {selectedCentroid.longitude.toFixed(4)}°
-                  </span>
-                </div>
-              )}
-
-              {/* PRIMARY ACTION BUTTON */}
-              <Button
-                className="w-full h-10 text-xs font-mono font-bold uppercase tracking-wider gap-2 shadow-lg bg-sky-500 text-slate-950 hover:bg-sky-400 shadow-sky-500/20"
-                onClick={() => setIsModalOpen(true)}
-              >
-                Open Full Investigation State
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* PHASE 4.4 MISSION CONTROL SCIENTIFIC UI */}
-          {selectedCaseId && (
-            <div className="space-y-6 pt-2">
-              {/* FEATURE 1: EVIDENCE / CONFIDENCE WALL */}
-              <EvidenceConfidenceWall caseId={selectedCaseId} />
-
-              {/* FEATURE 2: CHANGE LENSES */}
-              <ChangeLensesView caseDetail={caseDetail} />
-
-              {/* FEATURE 3: OPTICAL VS SAR SWIPE COMPARISON */}
-              <OpticalSarSwipeComparison
-                opticalUri={opticalUriCandidate}
-                sarUri={sarUriCandidate}
-              />
-
-              {/* FEATURE 4: EVENT TIMELINE */}
-              <EnhancedEventTimeline
-                timeline={timeline}
-                observationStart={caseDetail?.observation_start}
-                observationEnd={caseDetail?.observation_end}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* SECTION 6: NO CASES EMPTY STATE */}
+      {/* NO CASES FOUND EMPTY STATE */}
       {!loadingCases && !apiError && cases.length === 0 && (
         <Card className="glass-panel border-sky-500/20 text-center p-8">
           <CardContent className="p-4 space-y-3">
@@ -553,7 +321,66 @@ export function ScanScreen({
         </Card>
       )}
 
-      {/* SECTION 7: INVESTIGATION DETAIL MODAL / DRAWER */}
+      {/* FOUR SEGMENTED VIEWS */}
+      {!loadingCases && !apiError && caseDetail && (
+        <>
+          {/* VIEW 1: OVERVIEW */}
+          {activeView === 'overview' && (
+            <OverviewView
+              location={location}
+              locationStatus={locationStatus}
+              locationError={locationError}
+              requestLocation={requestLocation}
+              cases={cases}
+              selectedCaseId={selectedCaseId}
+              onSelectCaseId={setSelectedCaseId}
+              caseDetail={caseDetail}
+              primaryNisarMeasurement={primaryNisarMeasurement}
+              selectedCentroid={selectedCentroid}
+              distanceToUser={distanceToUser}
+              hasTriggeredAlert={hasTriggeredAlert}
+              onOpenAlertModal={() => setIsAlertModalOpen(true)}
+              onShareCase={handleShareCaseLink}
+              copiedLink={copiedLink}
+              opticalUriCandidate={opticalUriCandidate}
+              sarUriCandidate={sarUriCandidate}
+              onNavigateToFeel={onNavigateToFeel}
+              onNavigateToVerify={onNavigateToVerify}
+              onOpenDetailModal={() => setIsModalOpen(true)}
+              onSelectPayload={() => handleViewChange('payloads')}
+            />
+          )}
+
+          {/* VIEW 2: SIGNALS */}
+          {activeView === 'signals' && (
+            <SignalsView
+              caseDetail={caseDetail}
+              primaryNisarMeasurement={primaryNisarMeasurement}
+              onNavigateToFeel={onNavigateToFeel}
+            />
+          )}
+
+          {/* VIEW 3: PAYLOADS / AUDIT */}
+          {activeView === 'payloads' && (
+            <PayloadAuditView
+              caseId={selectedCaseId || ''}
+              caseDetail={caseDetail}
+            />
+          )}
+
+          {/* VIEW 4: TIMELINE */}
+          {activeView === 'timeline' && (
+            <TimelineView
+              timeline={timeline}
+              observationStart={caseDetail?.observation_start}
+              observationEnd={caseDetail?.observation_end}
+              onNavigateToVerify={onNavigateToVerify}
+            />
+          )}
+        </>
+      )}
+
+      {/* INVESTIGATION DETAIL MODAL / DRAWER */}
       {isModalOpen && caseDetail && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex flex-col justify-end sm:justify-center p-4">
           <div className="glass-panel border-sky-500/30 rounded-2xl max-w-md w-full mx-auto max-h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
@@ -585,7 +412,7 @@ export function ScanScreen({
               {/* Overview */}
               <div className="space-y-2">
                 <h4 className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Layers className="h-3 w-3 text-primary" />
+                  <Layers className="h-3 w-3 text-sky-400" />
                   Investigation Overview
                 </h4>
                 <div className="grid grid-cols-2 gap-2 bg-muted/40 p-3 rounded-lg border border-border/40">
@@ -604,7 +431,7 @@ export function ScanScreen({
               {caseDetail.nisar_measurements.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-primary" />
+                    <Activity className="h-3 w-3 text-sky-400" />
                     Backend NISAR Measurements
                   </h4>
                   {caseDetail.nisar_measurements.map((m) => (
@@ -614,7 +441,7 @@ export function ScanScreen({
                     >
                       <div className="flex justify-between font-semibold">
                         <span>{m.product_id}</span>
-                        <span className="text-primary">
+                        <span className="text-sky-400">
                           {m.delta_backscatter != null ? `${m.delta_backscatter} dB` : 'N/A'}
                         </span>
                       </div>
@@ -646,27 +473,6 @@ export function ScanScreen({
                   ))}
                 </div>
               )}
-
-              {/* Timeline */}
-              {timeline && timeline.events.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-primary" />
-                    Chronological Timeline
-                  </h4>
-                  <div className="space-y-2 border-l-2 border-primary/30 ml-2 pl-3">
-                    {timeline.events.map((evt) => (
-                      <div key={evt.id} className="relative space-y-0.5">
-                        <span className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-primary" />
-                        <p className="font-semibold text-foreground">{evt.title}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {new Date(evt.timestamp).toLocaleString()} ({evt.phase.toUpperCase()})
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Modal Footer */}
@@ -682,7 +488,8 @@ export function ScanScreen({
           </div>
         </div>
       )}
-      {/* SECTION 8: THRESHOLD ALERT MODAL */}
+
+      {/* THRESHOLD ALERT MODAL */}
       <ThresholdAlertModal
         isOpen={isAlertModalOpen}
         onClose={() => setIsAlertModalOpen(false)}
