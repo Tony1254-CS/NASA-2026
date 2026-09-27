@@ -8,6 +8,8 @@ import { MobileNav, type MobileTab } from '@/components/mobile/MobileNav';
 import { ScanScreen, type MobileScanView } from '@/components/mobile/ScanScreen';
 import { FeelScreen } from '@/components/mobile/FeelScreen';
 import { VerifyScreen } from '@/components/mobile/VerifyScreen';
+import { GlobalPulseView } from '@/components/scientific/GlobalPulseView';
+import { CharGuardianView } from '@/components/scientific/CharGuardianView';
 
 interface PageProps {
   params: Promise<{ case_id: string }>;
@@ -50,17 +52,31 @@ export default function DeepLinkCasePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#060911] text-foreground flex flex-col antialiased selection:bg-primary/20 overflow-x-hidden">
-      {/* Header */}
-      <MobileHeader locationStatus={locationStatus} serverStatus={serverStatus} />
+      {/* 6. TRACE FIELD Header with Mission Modules Hamburger Menu */}
+      <MobileHeader
+        locationStatus={locationStatus}
+        serverStatus={serverStatus}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       {/* Main Tab Content */}
-      <main className="flex-1 pt-2 pb-20">
+      <main className="flex-1 pt-2 pb-safe-content">
         {isScanScreenView && (
           <ScanScreen
             overrideCaseId={caseId}
             currentMobileView={currentMobileScanView}
             onMobileViewChange={(v) => setActiveTab(v)}
             onNavigateToFeel={() => setActiveTab('feel')}
+            onNavigateToVerify={() => setActiveTab('verify')}
+          />
+        )}
+        {activeTab === 'pulse' && (
+          <GlobalPulseView onSelectCase={() => setActiveTab('overview')} />
+        )}
+        {activeTab === 'char' && (
+          <CharGuardianView
+            initialCaseId={caseId}
             onNavigateToVerify={() => setActiveTab('verify')}
           />
         )}
@@ -72,7 +88,7 @@ export default function DeepLinkCasePage({ params }: PageProps) {
         )}
       </main>
 
-      {/* Navigation */}
+      {/* 12. TRACE FIELD Navigation */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );

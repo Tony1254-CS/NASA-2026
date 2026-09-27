@@ -94,7 +94,7 @@ export function TimelineView({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6">
       <Card className="glass-panel border-sky-500/20 shadow-xl relative overflow-hidden">
         <div className="tech-corner-tl" />
         <div className="tech-corner-tr" />

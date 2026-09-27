@@ -57,11 +57,16 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#060911] text-foreground flex flex-col antialiased selection:bg-primary/20 overflow-x-hidden">
-      {/* 6. TRACE FIELD Header */}
-      <MobileHeader locationStatus={locationStatus} serverStatus={serverStatus} />
+      {/* 6. TRACE FIELD Header with Mission Modules Hamburger Menu */}
+      <MobileHeader
+        locationStatus={locationStatus}
+        serverStatus={serverStatus}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-2 pb-20 space-y-2">
+      <main className="flex-1 pt-2 pb-safe-content space-y-2">
         {isScanScreenView && (
           <>
             {/* Mission Control Hero Explanation & Module Cards — Desktop Only to prevent mobile scrolling */}

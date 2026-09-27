@@ -219,4 +219,15 @@
   -webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(90%);
 }
 
+/* MOBILE SAFE AREA UTILITIES */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pb-safe-content {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 

@@ -252,9 +252,9 @@ export function ScanScreen({
   ];
 
   return (
-    <div className="space-y-3 pb-24 max-w-md md:max-w-4xl mx-auto px-3 sm:px-4">
-      {/* 5. MOBILE SEGMENTED VIEW CONTROLS */}
-      <div className="glass-panel border-sky-500/25 p-1 rounded-xl shadow-lg flex items-center justify-between gap-1 relative overflow-hidden">
+    <div className="space-y-3 pb-safe-content max-w-md md:max-w-4xl mx-auto px-3 sm:px-4">
+      {/* 5. SEGMENTED VIEW CONTROLS (Hidden on mobile to ensure single primary bottom navigation; shown on desktop) */}
+      <div className="hidden md:flex glass-panel border-sky-500/25 p-1 rounded-xl shadow-lg items-center justify-between gap-1 relative overflow-hidden">
         {navSegments.map((seg) => {
           const Icon = seg.icon;
           const isActive = activeView === seg.id;
