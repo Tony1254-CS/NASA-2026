@@ -201,7 +201,7 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
   const selectedCase = caseList.find((c) => c.case_id === selectedCaseId);
 
   return (
-    <div className="space-y-4 pb-20 max-w-md mx-auto px-4" role="region" aria-label="Ground Truth Closed-Loop System">
+    <div className="space-y-4 pb-safe-content max-w-md mx-auto px-4" role="region" aria-label="Ground Truth Closed-Loop System">
       {/* OFFLINE QUEUE STATUS BANNER */}
       {pendingCount > 0 && (
         <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
@@ -291,20 +291,23 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
         </CardHeader>
 
         <CardContent className="p-4 pt-2 space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
             <Button
               type="button"
               disabled={submitting || !selectedCaseId || !location}
               onClick={() => handleOneTapSubmit('YES')}
-              className="h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs gap-1.5 shadow-lg shadow-emerald-600/30 transition-all"
+              className="h-12 px-2 sm:px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-mono shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 sm:gap-2 whitespace-normal"
             >
               {submitting ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <ThumbsUp className="h-4 w-4" />
-                  YES (Confirmed)
-                </>
+                <div className="flex items-center gap-1.5 sm:gap-2 leading-tight">
+                  <ThumbsUp className="h-4 w-4 shrink-0 text-white" />
+                  <div className="flex flex-col text-left">
+                    <span className="text-xs font-extrabold tracking-wide">YES</span>
+                    <span className="text-[10px] text-emerald-100 font-sans font-medium whitespace-nowrap">Confirmed</span>
+                  </div>
+                </div>
               )}
             </Button>
 
@@ -312,15 +315,18 @@ export function VerifyScreen({ initialCaseId, onSuccess }: VerifyScreenProps) {
               type="button"
               disabled={submitting || !selectedCaseId || !location}
               onClick={() => handleOneTapSubmit('NO')}
-              className="h-11 bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs gap-1.5 shadow-lg shadow-rose-600/30 transition-all"
+              className="h-12 px-2 sm:px-3 bg-rose-600 hover:bg-rose-500 text-white font-mono shadow-lg shadow-rose-600/30 transition-all flex items-center justify-center gap-1.5 sm:gap-2 whitespace-normal"
             >
               {submitting ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <ThumbsDown className="h-4 w-4" />
-                  NO (False Positive)
-                </>
+                <div className="flex items-center gap-1.5 sm:gap-2 leading-tight">
+                  <ThumbsDown className="h-4 w-4 shrink-0 text-white" />
+                  <div className="flex flex-col text-left">
+                    <span className="text-xs font-extrabold tracking-wide">NO</span>
+                    <span className="text-[10px] text-rose-100 font-sans font-medium whitespace-nowrap">False Positive</span>
+                  </div>
+                </div>
               )}
             </Button>
           </div>
