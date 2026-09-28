@@ -217,6 +217,50 @@
 .trace-osm-dark-tiles .leaflet-tile {
   filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(90%);
   -webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(90%);
+  transition: filter 0.4s ease-out;
+}
+
+/* SAR RADAR POLARIZATION SPECIFIC TILE FILTER PROFILES */
+/* VV: Surface roughness & water body mapping (Cyan / Dark specular absorption) */
+.trace-sar-vv-tiles .leaflet-tile {
+  filter: invert(100%) hue-rotate(195deg) brightness(85%) contrast(140%) saturate(120%);
+  -webkit-filter: invert(100%) hue-rotate(195deg) brightness(85%) contrast(140%) saturate(120%);
+  transition: filter 0.4s ease-out;
+}
+
+/* VH: Vegetation canopy volume scattering (Emerald / Forest green) */
+.trace-sar-vh-tiles .leaflet-tile {
+  filter: invert(100%) hue-rotate(105deg) brightness(88%) contrast(130%) saturate(145%);
+  -webkit-filter: invert(100%) hue-rotate(105deg) brightness(88%) contrast(130%) saturate(145%);
+  transition: filter 0.4s ease-out;
+}
+
+/* RGB Composite: Multi-polarimetric false color synthesis */
+.trace-sar-rgb-tiles .leaflet-tile {
+  filter: invert(100%) hue-rotate(250deg) brightness(96%) contrast(140%) saturate(220%);
+  -webkit-filter: invert(100%) hue-rotate(250deg) brightness(96%) contrast(140%) saturate(220%);
+  transition: filter 0.4s ease-out;
+}
+
+/* TACTICAL MAP CROSSHAIR CURSOR FOR SIGNAL INSPECTION */
+.cursor-tactical-crosshair {
+  cursor: crosshair !important;
+}
+
+/* RADAR PIN & ANOMALY POINT ANIMATIONS */
+@keyframes sar-pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.sar-inspect-pulse {
+  animation: sar-pulse-ring 2s cubic-bezier(0.2, 0.8, 0.25, 1) infinite;
 }
 
 /* MOBILE SAFE AREA UTILITIES */

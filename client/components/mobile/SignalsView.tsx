@@ -1,11 +1,25 @@
 'use client';
 
 import React from 'react';
-import { Activity, Radio, Compass, ShieldAlert, Sparkles, Volume2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Activity, Radio, Compass, ShieldAlert, Sparkles, Volume2, Radar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChangeLensesView } from '@/components/scientific/ChangeLensesView';
 import { type CaseDetailResponse, type NisarMeasurementResponse } from '@/lib/api';
+
+const PlanetaryRealMap = dynamic(
+  () => import('@/components/scientific/PlanetaryRealMap').then((mod) => mod.PlanetaryRealMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[320px] sm:h-[380px] bg-[#050914] flex flex-col items-center justify-center space-y-3 font-mono text-xs text-sky-400">
+        <Radar className="w-8 h-8 animate-spin" />
+        <span className="tracking-widest uppercase">INITIALIZING SAR RADAR PROJECTION...</span>
+      </div>
+    ),
+  }
+);
 
 interface SignalsViewProps {
   caseDetail: CaseDetailResponse | null;
@@ -201,6 +215,61 @@ export function SignalsView({
           )}
         </CardContent>
       </Card>
+
+      {/* 4. SAR SPATIAL POLARIMETRY & SIGNAL INSPECTOR MAP */}
+      {caseDetail && (
+        <Card className="bg-slate-950/80 border-sky-500/25 overflow-hidden shadow-2xl relative">
+          <CardHeader className="p-4 pb-2 border-b border-sky-500/20 flex flex-row items-center justify-between bg-slate-900/40">
+            <div className="space-y-0.5">
+              <CardTitle className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <Radar className="w-4 h-4 text-sky-400 shrink-0 animate-pulse" />
+                SAR Polarimetric & Temporal Change Map
+              </CardTitle>
+              <CardDescription className="text-[10px] text-slate-400 font-mono">
+                Inspect Sentinel-1 dual-polarization, log-ratio difference heatmap, and point-level backscatter time-series.
+              </CardDescription>
+            </div>
+            <span className="text-[10px] font-mono text-sky-300 bg-sky-500/15 px-2.5 py-0.5 rounded-full border border-sky-400/30 shrink-0 hidden sm:inline-block">
+              AOI // {caseDetail.case_id}
+            </span>
+          </CardHeader>
+
+          <CardContent className="p-0 relative">
+            <PlanetaryRealMap
+              events={[
+                {
+                  case_id: caseDetail.case_id,
+                  event_type: caseDetail.event_type,
+                  latitude:
+                    caseDetail.geometry?.type === 'Point'
+                      ? caseDetail.geometry.coordinates[1]
+                      : caseDetail.geometry?.type === 'Polygon'
+                      ? caseDetail.geometry.coordinates[0][0][1]
+                      : 23.8,
+                  longitude:
+                    caseDetail.geometry?.type === 'Point'
+                      ? caseDetail.geometry.coordinates[0]
+                      : caseDetail.geometry?.type === 'Polygon'
+                      ? caseDetail.geometry.coordinates[0][0][0]
+                      : 90.4,
+                  observation_start: caseDetail.observation_start,
+                  observation_end: caseDetail.observation_end,
+                  status: caseDetail.status,
+                  evidence_status: 'EVALUATED',
+                  audit_verdict: 'SUPPORTED',
+                  ground_truth_count: caseDetail.field_observations?.length || 0,
+                  provenance_count: caseDetail.provenance_records?.length || 0,
+                  created_at: caseDetail.created_at,
+                },
+              ]}
+              selectedCaseId={caseDetail.case_id}
+              onSelectCase={() => {}}
+              caseGeometry={caseDetail.geometry}
+              initialPolarization="VV"
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
