@@ -4,6 +4,7 @@ import { TimeSeriesChart } from '../ui/TimeSeriesChart';
 
 export function RiskScreen() {
   const [sliderValue, setSliderValue] = useState(50);
+  const [isolateSignals, setIsolateSignals] = useState(false);
   
   // Dynamic calculations based on slider
   // 50 is TODAY (-28mm), 100 is end of 2028 (-100mm)
@@ -40,7 +41,27 @@ export function RiskScreen() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* 5A & 5B. Time-Series Chart and Slider */}
         <ScienceCard title="DISPLACEMENT TIME-SERIES">
-          <TimeSeriesChart sliderValue={sliderValue} />
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-xs text-slate-400 font-mono uppercase">Filter:</span>
+            <label className="flex items-center cursor-pointer">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  className="sr-only" 
+                  checked={isolateSignals}
+                  onChange={() => setIsolateSignals(!isolateSignals)}
+                />
+                <div className={`block w-8 h-5 rounded-full transition-colors ${isolateSignals ? 'bg-rose-500' : 'bg-slate-700'}`}></div>
+                <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${isolateSignals ? 'transform translate-x-3' : ''}`}></div>
+              </div>
+              <div className={`ml-2 text-[10px] font-mono tracking-widest uppercase ${isolateSignals ? 'text-rose-400 font-bold' : 'text-slate-500'}`}>
+                Isolate Critical Signals
+              </div>
+            </label>
+          </div>
+          <div className={isolateSignals && currentDisplacement < -50 ? 'animate-pulse' : ''}>
+            <TimeSeriesChart sliderValue={sliderValue} isolateSignals={isolateSignals} />
+          </div>
           
           <div className="mt-4 px-2">
             <input 

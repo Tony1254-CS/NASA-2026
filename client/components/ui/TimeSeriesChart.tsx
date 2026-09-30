@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function TimeSeriesChart({ sliderValue }: { sliderValue: number }) {
+export function TimeSeriesChart({ sliderValue, isolateSignals = false }: { sliderValue: number, isolateSignals?: boolean }) {
   // sliderValue 0 to 50 is historical, 50 to 100 is future
   // map 0-100 to SVG x coordinates 0-400
   const markerX = (sliderValue / 100) * 400;
@@ -24,17 +24,17 @@ export function TimeSeriesChart({ sliderValue }: { sliderValue: number }) {
         {sliderValue > 50 && (
           <polygon 
             points={`200,60 400,120 400,180 200,60`} 
-            fill="rgba(244, 63, 94, 0.15)" 
+            fill={isolateSignals ? "rgba(244, 63, 94, 0.3)" : "rgba(244, 63, 94, 0.15)"} 
             clipPath="url(#futureClip)"
           />
         )}
         
         {/* Historical Line (Solid Cyan) */}
-        <polyline points="0,20 50,25 100,40 150,55 200,60" fill="none" stroke="#0ea5e9" strokeWidth="2" clipPath="url(#historyClip)" />
+        <polyline points="0,20 50,25 100,40 150,55 200,60" fill="none" stroke={isolateSignals ? "#f43f5e" : "#0ea5e9"} strokeWidth="2" clipPath="url(#historyClip)" />
         
         {/* Projected Line (Dashed Red) */}
         {sliderValue > 50 && (
-          <polyline points="200,60 250,85 300,110 350,130 400,150" fill="none" stroke="#f43f5e" strokeWidth="2" strokeDasharray="4 4" clipPath="url(#futureClip)" />
+          <polyline points="200,60 250,85 300,110 350,130 400,150" fill="none" stroke="#f43f5e" strokeWidth={isolateSignals ? "3" : "2"} strokeDasharray="4 4" clipPath="url(#futureClip)" />
         )}
         
         {/* Interactive Marker */}
