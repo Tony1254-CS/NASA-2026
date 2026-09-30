@@ -5,23 +5,18 @@ import { fetchHealthStatus } from '@/lib/api';
 import { useGeolocation } from '@/lib/useGeolocation';
 import { MobileHeader } from '@/components/mobile/MobileHeader';
 import { MobileNav, type MobileTab } from '@/components/mobile/MobileNav';
-import { ScanScreen, type MobileScanView } from '@/components/mobile/ScanScreen';
-import { FeelScreen } from '@/components/mobile/FeelScreen';
-import { VerifyScreen } from '@/components/mobile/VerifyScreen';
-import { GlobalPulseView } from '@/components/scientific/GlobalPulseView';
-import { CharGuardianView } from '@/components/scientific/CharGuardianView';
-import { HeroMissionHeader } from '@/components/mobile/HeroMissionHeader';
+
+// Screens
+import { OrbitScreen } from '@/components/screens/OrbitScreen';
+import { FringeScreen } from '@/components/screens/FringeScreen';
+import { SignalScreen } from '@/components/screens/SignalScreen';
+import { VerifyScreen } from '@/components/screens/VerifyScreen';
+import { RiskScreen } from '@/components/screens/RiskScreen';
 
 export default function HomePage() {
   const { status: locationStatus } = useGeolocation();
   const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
-  const [activeTab, setActiveTab] = useState<MobileTab>('overview');
-  const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
-
-  const handleSelectCaseFromPulse = (caseId: string) => {
-    setCurrentCaseId(caseId);
-    setActiveTab('overview');
-  };
+  const [activeTab, setActiveTab] = useState<MobileTab>('orbit');
 
   useEffect(() => {
     let isMounted = true;
@@ -43,71 +38,21 @@ export default function HomePage() {
     };
   }, []);
 
-  const isScanScreenView =
-    activeTab === 'scan' ||
-    activeTab === 'overview' ||
-    activeTab === 'signals' ||
-    activeTab === 'payloads' ||
-    activeTab === 'timeline';
-
-  const currentMobileScanView: MobileScanView =
-    activeTab === 'signals' || activeTab === 'payloads' || activeTab === 'timeline'
-      ? activeTab
-      : 'overview';
-
   return (
     <div className="min-h-screen bg-[#060911] text-foreground flex flex-col antialiased selection:bg-primary/20 overflow-x-hidden">
-      {/* 6. TRACE FIELD Header with Mission Modules Hamburger Menu */}
+      {/* 6. TRACE FIELD Header */}
       <MobileHeader
         locationStatus={locationStatus}
         serverStatus={serverStatus}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-2 pb-safe-content space-y-2">
-        {isScanScreenView && (
-          <>
-            {/* Mission Control Hero Explanation & Module Cards — Desktop Only to prevent mobile scrolling */}
-            <div className="hidden md:block">
-              <HeroMissionHeader activeTab={activeTab} onTabChange={setActiveTab} />
-            </div>
-
-            <ScanScreen
-              overrideCaseId={currentCaseId}
-              currentMobileView={currentMobileScanView}
-              onMobileViewChange={(v) => setActiveTab(v)}
-              onNavigateToFeel={() => setActiveTab('feel')}
-              onNavigateToVerify={() => setActiveTab('verify')}
-            />
-          </>
-        )}
-
-        {activeTab === 'pulse' && (
-          <GlobalPulseView onSelectCase={handleSelectCaseFromPulse} />
-        )}
-
-        {activeTab === 'char' && (
-          <CharGuardianView
-            initialCaseId={currentCaseId}
-            onNavigateToVerify={() => setActiveTab('verify')}
-          />
-        )}
-
-        {activeTab === 'feel' && (
-          <FeelScreen
-            initialCaseId={currentCaseId}
-            onNavigateToVerify={() => setActiveTab('verify')}
-          />
-        )}
-
-        {activeTab === 'verify' && (
-          <VerifyScreen
-            initialCaseId={currentCaseId}
-            onSuccess={() => setActiveTab('overview')}
-          />
-        )}
+      <main className="flex-1 pb-safe-content">
+        {activeTab === 'orbit' && <OrbitScreen />}
+        {activeTab === 'fringe' && <FringeScreen />}
+        {activeTab === 'signal' && <SignalScreen />}
+        {activeTab === 'verify' && <VerifyScreen />}
+        {activeTab === 'risk' && <RiskScreen />}
       </main>
 
       {/* 12. TRACE FIELD Navigation */}

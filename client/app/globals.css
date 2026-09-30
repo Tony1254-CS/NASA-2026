@@ -275,3 +275,17 @@
 }
 
 
+
+/* DYNAMIC BACKGROUND COLOR FOR EXPERIENCE SCREEN */
+:root {
+  --experience-bg: #060b17;
+}
+.bg-experience {
+  background-color: var(--experience-bg);
+  transition: background-color 0.2s ease-out;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
