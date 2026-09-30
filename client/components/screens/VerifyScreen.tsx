@@ -53,7 +53,7 @@ export const VerifyScreen: React.FC = () => {
 
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
           <div className="w-12 h-12 border-2 border-dashed border-cyan-400 rounded-full animate-pulse flex items-center justify-center">
-            <div className="text-cyan-400">↓</div>
+            <div className="text-cyan-400">+</div>
           </div>
           <div className="mt-2 text-[10px] font-mono text-cyan-300 bg-slate-900/80 px-2 py-0.5 rounded">
             Expected: Subsidence
@@ -87,7 +87,7 @@ export const VerifyScreen: React.FC = () => {
                 onClick={() => setMatchesSar(match)}
                 className={`flex-1 py-2 rounded ${matchesSar === match ? 'bg-emerald-900 text-emerald-300 border border-emerald-500' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}
               >
-                {match === 'Confirms' ? '✓ ' : match === 'Contradicts' ? '✗ ' : '? '}{match}
+                {match === 'Confirms' ? '✓ ' : match === 'Contradicts' ? '✕ ' : '? '}{match}
               </button>
             ))}
           </div>
@@ -121,13 +121,13 @@ export const VerifyScreen: React.FC = () => {
       </div>
 
       {/* Verification Score */}
-      <div className="science-card p-4 border-emerald-900/50 bg-emerald-950/10">
+      <div className={`science-card p-4 border-${matchesSar === 'Confirms' ? 'emerald' : matchesSar === 'Contradicts' ? 'rose' : 'amber'}-900/50 bg-${matchesSar === 'Confirms' ? 'emerald' : matchesSar === 'Contradicts' ? 'rose' : 'amber'}-950/10`}>
         <h3 className="text-xs font-mono tracking-widest text-slate-400 mb-3 uppercase">Ground Truth vs. SAR Coherence</h3>
         
         <div className="grid grid-cols-1 gap-2 text-sm mb-4">
           <div className="flex justify-between border-b border-slate-700/50 pb-1">
             <span className="text-slate-400">Your observation:</span>
-            <span className="text-slate-200">"Cracked pavement"</span>
+            <span className="text-slate-200">"{surfaceCondition}"</span>
           </div>
           <div className="flex justify-between border-b border-slate-700/50 pb-1">
             <span className="text-slate-400">SAR coherence:</span>
@@ -140,11 +140,16 @@ export const VerifyScreen: React.FC = () => {
         </div>
 
         <div className="bg-slate-900 rounded p-3 mb-4">
-          <div className="font-bold text-emerald-400 mb-1 flex items-center">
-            <span className="mr-2">✓</span> CONSISTENT
+          <div className={`font-bold mb-1 flex items-center ${matchesSar === 'Confirms' ? 'text-emerald-400' : matchesSar === 'Contradicts' ? 'text-rose-400' : 'text-amber-400'}`}>
+            <span className="mr-2">{matchesSar === 'Confirms' ? '✓' : matchesSar === 'Contradicts' ? '✕' : '?'}</span> {matchesSar.toUpperCase()}
           </div>
           <div className="text-xs text-slate-300">
-            High coherence + subsidence + surface cracking = groundwater extraction signature.
+            {matchesSar === 'Confirms' 
+              ? `High coherence + subsidence + ${surfaceCondition.toLowerCase()} = groundwater extraction signature.`
+              : matchesSar === 'Contradicts'
+              ? `Field data (${surfaceCondition}) contradicts SAR detection. Potential phase unwrapping error or localized anomaly.`
+              : `Insufficient data to validate SAR coherence signature.`
+            }
           </div>
         </div>
 
@@ -153,10 +158,12 @@ export const VerifyScreen: React.FC = () => {
           <div className="flex items-center">
             <div className="flex space-x-0.5 mr-2">
               {[...Array(10)].map((_, i) => (
-                <div key={i} className={`h-2 w-1.5 ${i < 8 ? 'bg-emerald-500' : 'bg-slate-700'}`}></div>
+                <div key={i} className={`h-2 w-1.5 ${i < (confidence * 2) ? (matchesSar === 'Confirms' ? 'bg-emerald-500' : matchesSar === 'Contradicts' ? 'bg-rose-500' : 'bg-amber-500') : 'bg-slate-700'}`}></div>
               ))}
             </div>
-            <span className="text-emerald-400 font-bold">82%</span>
+            <span className={`font-bold ${matchesSar === 'Confirms' ? 'text-emerald-400' : matchesSar === 'Contradicts' ? 'text-rose-400' : 'text-amber-400'}`}>
+              {(confidence * 20)}%
+            </span>
           </div>
         </div>
       </div>

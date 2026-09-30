@@ -5,10 +5,32 @@ import { TimeSeriesChart } from '../ui/TimeSeriesChart';
 export function RiskScreen() {
   const [sliderValue, setSliderValue] = useState(50);
   
+  // Dynamic calculations based on slider
+  // 50 is TODAY (-28mm), 100 is end of 2028 (-100mm)
+  const isFuture = sliderValue > 50;
+  const progress = sliderValue / 100;
+  const futureProgress = isFuture ? (sliderValue - 50) / 50 : 0;
+  
+  // Interpolated values
+  const currentDisplacement = -28 + (futureProgress * -72); // max -100
+  const currentUncertainty = 5 + (futureProgress * 15); // max 20
+  const populationAtRisk = Math.floor(12000 + (futureProgress * 11147));
+  const hospitals = isFuture && sliderValue > 75 ? 2 : 1;
+  const schools = isFuture ? Math.floor(3 + futureProgress * 4) : 3;
+
+  // Date calculation based on slider
+  const getSimulatedDate = () => {
+    if (!isFuture) return 'TODAY';
+    const monthsAhead = Math.floor(futureProgress * (12 * 4)); // 4 years
+    const d = new Date();
+    d.setMonth(d.getMonth() + monthsAhead);
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#060911] text-slate-100 pb-20">
       <div className="px-4 py-3 flex justify-between items-center border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-        <span className="text-xl font-bold tracking-tight">◉ TRACE FIELD</span>
+        <span className="text-xl font-bold tracking-tight">🛰 TRACE FIELD</span>
         <div className="flex items-center space-x-1.5 text-rose-500 text-xs font-semibold tracking-wider">
           <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
           <span>RISK ANALYSIS</span>
@@ -18,7 +40,7 @@ export function RiskScreen() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* 5A & 5B. Time-Series Chart and Slider */}
         <ScienceCard title="DISPLACEMENT TIME-SERIES">
-          <TimeSeriesChart />
+          <TimeSeriesChart sliderValue={sliderValue} />
           
           <div className="mt-4 px-2">
             <input 
@@ -36,10 +58,10 @@ export function RiskScreen() {
         </ScienceCard>
 
         {/* 5C. Impact Assessment Panel */}
-        <ScienceCard title={`⚠️ PROJECTED IMPACT @ ${sliderValue > 50 ? 'March 2027' : 'TODAY'}`}>
+        <ScienceCard title={`⚠️ PROJECTED IMPACT @ ${getSimulatedDate()}`}>
           <div className="grid grid-cols-2 gap-2 text-sm mb-4">
             <div className="text-slate-400">Displacement:</div>
-            <div className="font-mono text-cyan-300 text-right">-67 mm (±12 mm)</div>
+            <div className="font-mono text-cyan-300 text-right">{currentDisplacement.toFixed(1)} mm (±{currentUncertainty.toFixed(1)} mm)</div>
             
             <div className="text-slate-400">Velocity:</div>
             <div className="font-mono text-cyan-300 text-right">-34 mm/yr</div>
@@ -51,20 +73,20 @@ export function RiskScreen() {
           <div className="border-t border-slate-700/50 pt-3">
             <h4 className="text-[10px] font-mono tracking-widest text-slate-500 uppercase mb-2">HUMAN IMPACT</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-slate-300">🏘️ Population at risk:</div>
-              <div className="font-mono text-rose-400 text-right">23,147</div>
+              <div className="text-slate-300">👥 Population at risk:</div>
+              <div className="font-mono text-rose-400 text-right">{populationAtRisk.toLocaleString()}</div>
               
               <div className="text-slate-300">🏥 Hospitals:</div>
-              <div className="font-mono text-amber-400 text-right">2</div>
+              <div className="font-mono text-amber-400 text-right">{hospitals}</div>
               
               <div className="text-slate-300">🏫 Schools:</div>
-              <div className="font-mono text-amber-400 text-right">7</div>
+              <div className="font-mono text-amber-400 text-right">{schools}</div>
               
               <div className="text-slate-300">🌉 Bridges:</div>
-              <div className="font-mono text-amber-400 text-right">3</div>
+              <div className="font-mono text-amber-400 text-right">{isFuture ? 3 : 1}</div>
               
               <div className="text-slate-300">💧 Water treatment:</div>
-              <div className="font-mono text-amber-400 text-right">1</div>
+              <div className="font-mono text-amber-400 text-right">{isFuture && sliderValue > 90 ? 1 : 0}</div>
             </div>
           </div>
 
