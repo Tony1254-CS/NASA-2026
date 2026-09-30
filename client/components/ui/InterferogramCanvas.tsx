@@ -34,14 +34,17 @@ export const InterferogramCanvas: React.FC<Props> = ({ data, mode }) => {
         let r=0, g=0, b=0;
 
         if (mode === 'phase') {
-          [r, g, b] = phaseToColor(data.wrapped_phase[idx]);
+          const c = phaseToColor(data.wrapped_phase[idx]);
+          r = c.r; g = c.g; b = c.b;
         } else if (mode === 'coherence') {
-          [r, g, b] = coherenceToColor(data.coherence[idx]);
+          const c = coherenceToColor(data.coherence[idx]);
+          r = c.r; g = c.g; b = c.b;
         } else if (mode === 'amplitude') {
           const v = Math.floor(data.amplitude[idx] * 255);
           r = v; g = v; b = v;
         } else if (mode === 'displacement') {
-          [r, g, b] = displacementToColor(data.displacement_mm[idx], Math.abs(data.peak_displacement_mm));
+          const c = displacementToColor(data.displacement_mm[idx], Math.abs(data.peak_displacement_mm));
+          r = c.r; g = c.g; b = c.b;
         }
 
         const px = idx * 4;
