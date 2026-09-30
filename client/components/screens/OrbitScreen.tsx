@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScienceCard } from '../ui/ScienceCard';
 import { OrbitalArc } from '../ui/OrbitalArc';
+import { CountdownTimer } from '../ui/CountdownTimer';
 
 export function OrbitScreen() {
   const targetDate = new Date();
@@ -21,9 +22,7 @@ export function OrbitScreen() {
         {/* 1B. Pass Parameters Card */}
         <ScienceCard title="NEXT ACQUISITION OVER YOUR AREA">
           <div className="flex justify-center my-4">
-            <div className="text-3xl font-mono text-cyan-400">
-              ⏱ 02h 14m 37s
-            </div>
+            <CountdownTimer targetDate={targetDate} />
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-mono mt-4 border-t border-slate-700/50 pt-4">
             <div className="text-slate-400">Orbit:</div>
@@ -74,7 +73,7 @@ export function OrbitScreen() {
           
           <ScienceCard className="border-l-4 border-l-rose-500">
             <div className="flex justify-between items-start mb-2">
-              <div className="text-rose-400 text-[10px] font-mono tracking-widest uppercase">🔴 CRITICAL</div>
+              <div className="text-rose-400 text-[10px] font-mono tracking-widest uppercase">🚨 CRITICAL</div>
               <div className="text-[10px] font-mono text-slate-400">2h ago</div>
             </div>
             <div className="font-bold text-slate-100">Jakarta, Indonesia</div>
@@ -84,7 +83,7 @@ export function OrbitScreen() {
 
           <ScienceCard className="border-l-4 border-l-amber-500">
             <div className="flex justify-between items-start mb-2">
-              <div className="text-amber-400 text-[10px] font-mono tracking-widest uppercase">🟡 WARNING</div>
+              <div className="text-amber-400 text-[10px] font-mono tracking-widest uppercase">⚠️ WARNING</div>
             </div>
             <div className="font-bold text-slate-100">Sundarbans, Bangladesh</div>
             <div className="text-sm text-slate-300 mt-1">Flood inundation detected</div>
@@ -94,7 +93,7 @@ export function OrbitScreen() {
 
           <ScienceCard className="border-l-4 border-l-emerald-500">
             <div className="flex justify-between items-start mb-2">
-              <div className="text-emerald-400 text-[10px] font-mono tracking-widest uppercase">🟢 MONITORING</div>
+              <div className="text-emerald-400 text-[10px] font-mono tracking-widest uppercase">👁️ MONITORING</div>
             </div>
             <div className="font-bold text-slate-100">Türkiye, East Anatolian Fault</div>
             <div className="text-sm text-slate-300 mt-1">Post-seismic deformation</div>
